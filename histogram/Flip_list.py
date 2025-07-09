@@ -61,8 +61,8 @@ class PFLIPSimulator:
     def get_expected_error(self) -> float:
         bias = (math.exp(self.epsilon) + 1) / (math.exp(self.epsilon) - 1)
         tail = math.sqrt((132 / 5) * math.log(4 / self.delta) *
-                         math.log2(20 * self.d))  # 用 log2
-        scale = math.sqrt(self.k + 1) / self.n  # 加 √(k+1)/n
+                         math.log2(20 * self.d))  
+        scale = math.sqrt(self.k + 1) / self.n 
         return scale * bias * tail * self.scaling_factor
 
     def simulate(self, data: Union[List[int], np.ndarray, Dict[int, int]]) -> np.ndarray:
@@ -210,15 +210,13 @@ def generate_results_text(simulator, true_histogram, all_metrics, simulation_tim
     avg_metrics = {}
     for metric in all_metrics[0].keys():
         metric_values = [run_metrics[metric] for run_metrics in all_metrics]
-        trim_count = int(0.1 * len(all_metrics))  # 计算 10% 的数量
+        trim_count = int(0.1 * len(all_metrics))
 
-        # 确保去掉的数量不会导致没有剩余数据
         if trim_count * 2 < n:
             sorted_values = sorted(metric_values)
-            trimmed_values = sorted_values[trim_count:-trim_count]  # 去掉前 10% 和后 10%
+            trimmed_values = sorted_values[trim_count:-trim_count] 
             avg_metrics[metric] = np.mean(trimmed_values)
         else:
-            # 如果数据太少，直接计算平均值
             avg_metrics[metric] = np.mean(metric_values)
 
         # avg_metrics[metric] = np.mean(metric_values)
@@ -280,28 +278,16 @@ def generate_results_text(simulator, true_histogram, all_metrics, simulation_tim
 
 
 def load_sf_salary_for_frequency(n: int, d: int, seed: int = 42) -> list[int]:
-    """
-    读取 SF_Salaries 数据，提取 BasePay 并映射到整数域 [0, d-1]
-    Args:
-        n: 需要的样本数量
-        d: 频率统计的域大小
-        seed: 随机种子
-    Returns:
-        一个长度为 n 的整数列表，范围为 [0, d-1]
-    """
-
     path = "./data/Salary/SF_Salaries/data.csv"
     df = pd.read_csv(path)
 
     salary = pd.to_numeric(df['BasePay'], errors='coerce')
     salary = salary.fillna(0).clip(lower=0)
 
-    # 映射：线性缩放到 [0, d-1]
     salary = salary[salary > 0]
-    max_val = salary.quantile(0.999)  # 去除极端值（极大值不参与缩放）
+    max_val = salary.quantile(0.999) 
     scaled = (salary / max_val * (d - 1)).clip(0, d - 1).astype(int)
 
-    # 截断或扩充
     if len(scaled) >= n:
         result = scaled.sample(n=n, random_state=seed).tolist()
     else:
