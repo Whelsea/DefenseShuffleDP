@@ -116,21 +116,22 @@ def Analyzer(baseline, all_messages):
     eps_part2 = epsilon / 2
     delta_part1 = delta / 2 / (L - 1)
     delta_part2 = delta / 2
-    beta_part = beta / (2 * num_users / lambda_n - 1)
+    # beta_part = beta / (2 * num_users / lambda_n - 1)
+    beta_part1 = beta / 2 / (2 ** L - 2)
+    beta_part2 = beta / 2
 
     # ========== (1) Bottom-layer Detection ( r=0 ) ==========
 
     Q[0] = [0.0] * math.ceil(num_users / lambda_n)
     baseline_0 = baseline[0]
-    theta = get_theta(baseline_0, beta_part)
+    theta = get_theta(baseline_0, beta_part1)
     group_count = math.ceil(num_users / lambda_n)
     for g in range(group_count):
-        # 计算组g的result
+        # compute result of gourp g
         start_idx = g * lambda_n
         end_idx = min((g + 1) * lambda_n, num_users)
         group_messages = [all_messages[i][0] for i in range(start_idx, end_idx)]
         flattened_group_messages = list(chain.from_iterable(group_messages))
-        # 传递给 gkmps_group.Analyzer 进行分析
         result = baseline_0.Analyzer(flattened_group_messages, values='')
         # attention: (domain - 1)*lambda_n 针对的是range(Q,lambda)是最大值加和的Q
         if result < -2 * theta or result > (domain - 1) * lambda_n + 2 * theta:
@@ -140,37 +141,31 @@ def Analyzer(baseline, all_messages):
             Q[0][g] = result
 
     # ========== (2) Higher-layer Group Detection ==========
-    # 第1-logn+1层
+    # level 1-logn+1
     for r in range(1, L):
-        # 第r层的组数
         group_count = math.ceil(num_users / (lambda_n * (2 ** r)))
         Q[r] = np.zeros(group_count)
         group_size = lambda_n * (2 ** r)
-
-        # 取第r层的GKMPS实例
         baseline_r = baseline[r]
 
         for g in range(group_count):
-            # 检查是否任一子组无效
+            # check validness of subgroups
             left_idx = 2 * g
             right_idx = 2 * g + 1
             if Q[r - 1][left_idx] == float('-inf') or Q[r - 1][right_idx] == float('-inf'):
                 Q[r][g] = float('-inf')  # 从0开始计数！
                 continue
 
-            # 计算组g的result
             start_idx = g * group_size
             end_idx = min((g + 1) * group_size, num_users)
             group_messages = [all_messages[i][r] for i in range(start_idx, end_idx)]
-            # 将当前组的二维数组展平为一维数组
             flattened_group_messages = list(chain.from_iterable(group_messages))
-            # 传递给 baseline_r.Analyzer 进行分析
             result = baseline_r.Analyzer(flattened_group_messages, values='')
 
-            # 检查difference
+            # check difference between levels
             diff = abs(result - Q[r - 1][left_idx] - Q[r - 1][right_idx])
             if r == L - 1:
-                theta_2 = get_theta(baseline_r, beta_part)
+                theta_2 = get_theta(baseline_r, beta_part2)
                 if diff > 4 * theta + 2 * theta_2:
                     Q[r][g] = float('-inf')
                 else:
@@ -193,7 +188,7 @@ def Attack():
 
 
 # ------------------------------------------------------------
-#  4) 主函数: HSDP
+#  4) main: HSDP
 # ------------------------------------------------------------
 def HSDP(baseline, values, sorted_malicious):
     n = len(values)
@@ -202,7 +197,7 @@ def HSDP(baseline, values, sorted_malicious):
 
     # ========== (1) Randomization ==========
 
-    # all_messages[i] 存放用户 i 在各层(r=0..max_r)的随机化输出
+    # all_messages[i] store messages sent by user i at each level.
     all_messages = [[] for _ in range(n)]
     for i in range(n):
         if i in sorted_malicious:
@@ -211,14 +206,16 @@ def HSDP(baseline, values, sorted_malicious):
             m_r = LocalRandomizer(baseline, values[i])
         all_messages[i] = m_r
 
-    # ========== (2) Analyzer + Recovery ==========
+    # ========== (2) Analyzer: Detection + Recovery ==========
     dp_sum = Analyzer(baseline, all_messages)
     nmessages = sum(len(msg) for i, user_msgs in enumerate(all_messages)
                     if i not in sorted_malicious
                     for msg in user_msgs)
     return dp_sum, nmessages
 
-
+# ------------------------------------------------------------
+#  CSUZZ
+# ------------------------------------------------------------
 def simulateCSUZZ(values):
     dp_sums = []
     errors = []
@@ -265,7 +262,9 @@ def simulateCSUZZ(values):
         nmessages_per_user.append(1)
     return dp_sums, errors, nmessages_per_user
 
-
+# ------------------------------------------------------------
+#  Initial GKMPS objects for each level
+# ------------------------------------------------------------
 def init_GKMPS():
     # === Initial GKMPS objects ===
     lambda_n = find_lambda(num_users)
@@ -290,7 +289,9 @@ def init_GKMPS():
     gkmps_list.append(gkmps_r)
     return gkmps_list
 
-
+# ------------------------------------------------------------
+#  Initial BBGN objects for each level
+# ------------------------------------------------------------
 def init_BBGN():
     # === Initial BBGN objects ===
     lambda_n = find_lambda(num_users)
@@ -313,7 +314,9 @@ def init_BBGN():
     return bbgn_list
 
 
-# origin GKMPS protocol
+# ------------------------------------------------------------
+#  GKMPS protocol
+# ------------------------------------------------------------
 def baselineGKMPS(values):
     gkmps = GKMPS.GKMPS(n=num_users, domain=domain - 1, epsilon=epsilon, delta=delta,
                         gamma=gamma)
@@ -400,7 +403,6 @@ def ours_GKMPS(values):
     nmessages_per_user = []
 
     for i in range(times):
-        # 用于分析error：打印二叉树上每个组的真实data总和
         # for r in range(int(math.ceil(math.log2(num_users / lambda_n))) + 1):
         #     bath = []
         #     group_size =(lambda_n * (2 ** r))
@@ -461,17 +463,12 @@ def baselineBBGN(values):
 
 def processResult(dp_sums, real_sums, errors, beta):
     times = len(dp_sums)
-    # 根据beta筛两端的error
     cut_count = int(beta * times / 2)
-    # 组合三个列表
     combined = list(zip(errors, dp_sums, real_sums))
-    # 按error排序
     combined.sort()
-    # 截取中间部分
     start = cut_count
     end = len(combined) - cut_count
     trimmed = combined[start:end]
-    # 解压
     if trimmed:
         errors, dp_sums, real_sums = zip(*trimmed)
         errors = list(errors)
@@ -550,7 +547,6 @@ def simulate_ours_BBGN(values):
     L = int(math.ceil(math.log2(n / lambda_n))) + 1
     eps_part1 = epsilon / 2 / (L - 1)  # split privacy budget for layers except the top
     eps_part2 = epsilon / 2
-    # beta_part = beta / (2 * num_users / lambda_n - 1)
 
     dp_sums = []
     errors = []
@@ -579,12 +575,12 @@ def simulate_ours_BBGN(values):
                 start_index = g * group_size
                 end_index = min((g + 1) * group_size, n)
 
-                # 计算当前group有多少个attacker
+                # computer the #attackers in the current group
                 left = bisect.bisect_left(sorted_malicious[t], start_index)
                 right = bisect.bisect_right(sorted_malicious[t], end_index)
                 attackers_count_g = right - left
 
-                # 计算poisoning attacker的和
+                # compute the results sum of poisoning attackers
                 noisy_sum_attacker = 0
                 real_sum_attacker = 0
                 for i in sorted_malicious[t][left:right]:
@@ -690,7 +686,7 @@ def simulate_ours_GKMPS(values):
             Q=Q,
             L=L,
             lambda_n=lambda_n,
-            beta=beta / (2 * num_users / lambda_n - 1),
+            beta=beta,
             domain=domain,
             eps_part1=epsilon / 2 / (L - 1),
             eps_part2=epsilon / 2
