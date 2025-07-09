@@ -133,7 +133,6 @@ def Analyzer(baseline, all_messages):
         group_messages = [all_messages[i][0] for i in range(start_idx, end_idx)]
         flattened_group_messages = list(chain.from_iterable(group_messages))
         result = baseline_0.Analyzer(flattened_group_messages, values='')
-        # attention: (domain - 1)*lambda_n 针对的是range(Q,lambda)是最大值加和的Q
         if result < -2 * theta or result > (domain - 1) * lambda_n + 2 * theta:
             Q[0][g] = float('-inf')
             # save_snapshot.save_q_snapshot(group_messages, "invalid_0")
