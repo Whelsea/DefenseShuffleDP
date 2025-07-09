@@ -152,7 +152,7 @@ def Analyzer(baseline, all_messages):
             left_idx = 2 * g
             right_idx = 2 * g + 1
             if Q[r - 1][left_idx] == float('-inf') or Q[r - 1][right_idx] == float('-inf'):
-                Q[r][g] = float('-inf')  # 从0开始计数！
+                Q[r][g] = float('-inf') 
                 continue
 
             start_idx = g * group_size
@@ -233,7 +233,7 @@ def simulateCSUZZ(values):
 
     for t in range(times):
 
-        # sum of sttackers
+        # sum of attackers
         noisy_sum_attacker = 0
         for _ in sorted_malicious[t]:
             messages = Attack()
@@ -347,7 +347,7 @@ def simulateGKMPS(values):
     gkmps_errors = []
     gkmps_nmessages = []
     for t in range(times):
-        # k 个 attacker
+        # k attackers
         honest_user_values = [values[t][idx] for idx in range(len(values[t]))
                               if idx not in sorted_malicious[t]]
         honest_user_proportion = (num_users - k) / num_users
@@ -690,7 +690,7 @@ def simulate_ours_GKMPS(values):
             eps_part1=epsilon / 2 / (L - 1),
             eps_part2=epsilon / 2
         )
-        # ========== (4) 计算 error ==========
+        # ========== (4) compute error ==========
         true_sum = sum(values[t])
         err = abs(dp_sum - true_sum)
         errors.append(err)
