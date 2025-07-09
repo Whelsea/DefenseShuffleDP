@@ -9,13 +9,10 @@ def clean_csv_remove_commas(input_path, output_path, expected_fields=10):
 
             parts = line.split(',')
 
-            # 如果列数比预期多，说明某些字段中多了逗号
             if len(parts) > expected_fields:
-                # 修复思路：保留第1列为ID，最后(expected_fields - 2)列为正规字段
                 id_part = parts[0]
                 tail_fields = parts[-(expected_fields - 2):]
 
-                # 中间部分合并为职位字段，去掉内部逗号
                 position_field = ' '.join(parts[1:len(parts) - (expected_fields - 2)]).replace(',', ' ').strip()
 
                 fixed_line = [id_part, position_field] + tail_fields
@@ -32,7 +29,6 @@ def clean_csv_remove_commas(input_path, output_path, expected_fields=10):
     print(f"✅ Cleaned CSV written to: {output_path}")
 
 
-# 示例使用
 if __name__ == '__main__':
     input_file = './data_raw.csv'
     output_file = './data.csv'
