@@ -38,46 +38,37 @@ class FE1Simulator:
 
     def get_theta_fe1(self):
         """
-        计算FE1算法在给定参数下的误差上界theta (计算最坏情况下的theta)
-
-        返回:
-        theta: 误差上界
+        theta: error bound （can be adjust to different settings）
         """
         b = self.b
         pcol = self.pcol
         rho = self.sample_prob
 
-        # 计算μ (噪声Y的期望)
+        # expectation of noise
         mu_noise1 = self.n * pcol
         mu_noise2 = (self.n * 2 * math.floor(rho)) * (1 / b)
         mu_noise3 = (self.n * 2) * ((rho - math.floor(rho)) / b)
         mu = mu_noise1 + mu_noise2 + mu_noise3
 
-        # 计算 (误差上界)
         term1 = 3 * math.log(2 * self.B / self.beta)
         term2 = math.sqrt(3 * math.log(2 * self.B / self.beta) * mu) / (1 - pcol)
 
-        # 这个bias是实际加入的噪声和直接按照2n去偏产生的，现在先设置为0
         bias = 0
         theta = max(term1, term2) + bias
 
         return theta
 
     def fast_binomial_noise(self, n, p):
-        """使用正态分布近似二项分布，更快速"""
-        if n * p * (1 - p) < 9:  # 当 np(1-p) 较小时使用精确计算
+        if n * p * (1 - p) < 9: 
             return np.random.binomial(n, p)
         else:
-            # 正态分布近似: N(np, np(1-p))
             mu = n * p
             sigma = math.sqrt(n * p * (1 - p))
             return int(round(np.random.normal(mu, sigma)))
 
     def process_batch(self, indices, g, n, b, pcol, rho, honest_user_proportion):
-        """处理一批索引，返回它们的估计频率"""
         results = np.zeros(len(indices))
 
-        # 预计算不依赖于具体元素的噪声部分
 
         for i, x in enumerate(indices):
             gx = g[x]
@@ -93,8 +84,7 @@ class FE1Simulator:
         return results
 
     def simulate_parallel(self, data: List[int], honest_user_proportion) -> np.ndarray:
-        """使用并行处理加速模拟所有B个元素"""
-        # 计算真实频率
+
         g = np.zeros(self.B + 1)
         for x in data:
             g[x] += 1
@@ -105,18 +95,15 @@ class FE1Simulator:
         pcol = self.pcol
         rho = self.sample_prob
 
-        # 处理所有元素，但通过分块提高效率
         indices_to_process = np.arange(1, self.B + 1)
         num_cores = multiprocessing.cpu_count()
         indices_splits = np.array_split(indices_to_process, num_cores)
 
-        # 创建进程池并执行并行处理
         with multiprocessing.Pool(processes=num_cores) as pool:
             process_func = partial(self.process_batch, g=g, n=n, b=b, pcol=pcol, rho=rho,
                                    honest_user_proportion=honest_user_proportion)
             results = pool.map(process_func, indices_splits)
 
-        # 合并结果
         for i, batch_indices in enumerate(indices_splits):
             est[batch_indices] = results[i]
 
@@ -216,7 +203,6 @@ def load_data_by_mode(data_mode: str, n: int, B: int):
 
 
 if __name__ == "__main__":
-    # 实验参数
     n = 131072
     B = 131072
     epsilon = 4.0
@@ -226,7 +212,7 @@ if __name__ == "__main__":
     num_runs = 50
     trim_count = 5
 
-    list_distribution = ["unif", "zipf", "gauss","aol"]  # 遍历多个模拟分布
+    list_distribution = ["unif", "zipf", "gauss","aol"]  
 
     for data_mode in list_distribution:
         print(f"\n====== Running {data_mode.upper()} ======")
@@ -244,7 +230,7 @@ if __name__ == "__main__":
         for run in range(num_runs):
             print(f"Run {run + 1}/{num_runs}")
 
-            # 并行模拟
+            # parallel
             start_time = time.time()
             est_freq_parallel = sim.simulate_parallel(data, 1)
             parallel_time = time.time() - start_time
@@ -255,7 +241,7 @@ if __name__ == "__main__":
             parallel_results['msg_count'].append(1 + sim.sample_prob)
             parallel_results['bit_count'].append(math.ceil(math.log2(sim.q)) * 2 + math.ceil(math.log2(sim.b)))
 
-            # 串行模拟
+            # sequential
             start_time = time.time()
             est_freq_serial = sim.simulate(data)
             serial_time = time.time() - start_time
