@@ -280,17 +280,4 @@ class GKMPS:
         return nmessages, dpsum * self.B
 
 
-n = 512
-values = [random.choice(range(2)) for _ in range(n)]
-print(values[1:10])
-gkmps = GKMPS(n, 2, 0.0333, 1 / n / n, 0.3)
-nmessage, dp_sum = gkmps.Simulator(values)
-# print(dp_sum)
-# print(sum(values))
-# print(dp_sum - sum(values))
-print(nmessage)
-# print(1 - math.exp(0.7 / 1))
-# for _ in range(20):
-#     print(np.random.negative_binomial(0.9, 1 - math.exp(-0.7 / 2)))
-#     print(np.random.negative_binomial(1, 1 - math.exp(-0.7 / 2)))
-#     print("---")
+
