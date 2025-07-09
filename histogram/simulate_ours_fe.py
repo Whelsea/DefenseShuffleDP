@@ -239,7 +239,6 @@ if __name__ == "__main__":
                             print(f"running n={n}, B={d}, time={t}")
                             est_freq, nmessages_per_user = simulate_ours_FE1(values)
 
-                            # 误差评估
                             true_freq = np.zeros(d + 1)
                             for x in values:
                                 true_freq[x] += 1
@@ -355,83 +354,3 @@ if __name__ == "__main__":
                             f.write("#messages per user: " + str(nmessages_per_user) + "\n")
                             # f.write("#Bits per user: "+ str(math.ceil(math.log2())))
                         print(f"comp n={n} B={d}")
-
-# if __name__ == "__main__":
-#     epsilon = 4.0
-#     c = 1.0
-#
-#     k = 0
-#     times = 10
-#     beta = 0.1
-#     dataset = "simulated dataset"
-#     # for n in {16384, 131072, 1048576, 16777216}:
-#     #     for d in {1048576, 16777216}:
-#     for n in {1048576}:
-#         for d in {131072}:
-#             if dataset == "aol dataset":
-#                 b = math.log2(d)
-#                 values, n, d = loaddata(f"./data/aol_data/trans_01_n_{n}_b_{int(b)}_B_{d}.txt")
-#             else:
-#                 # values, n, d = loaddata(f"./data/simulated_data/Zip_n{n}B{d}")
-#                 values = np.random.randint(0, d, size=n)
-#             delta = 1.0 / (n ** 2)
-#
-#             malicious_users = []
-#             if k > 0:
-#                 malicious_users = set(random.sample(range(n), k))
-#             sorted_malicious = sorted(malicious_users)
-#
-#             max_errors = []
-#             l50Errors = []
-#             l90Errors = []
-#             l95Errors = []
-#             l99Errors = []
-#
-#             for t in range(times):
-#                 print(f"running n={n}, B={d}, time={t}")
-#                 est_freq, nmessages_per_user = simulate_ours_FE1(values)
-#
-#                 # 误差评估
-#                 true_freq = np.zeros(d + 1)
-#                 for x in values:
-#                     true_freq[x] += 1
-#
-#                 errors = np.abs(true_freq[1:] - est_freq[1:])
-#                 max_error = np.max(errors)
-#                 max_errors.append(max_error)
-#                 max_error_index = np.argmax(errors) + 1
-#                 sorted_errors = sorted(errors)
-#                 l50Errors.append(sorted_errors[int(0.50 * d)])
-#                 l90Errors.append(sorted_errors[int(0.90 * d)])
-#                 l95Errors.append(sorted_errors[int(0.95 * d)])
-#                 l99Errors.append(sorted_errors[int(0.99 * d)])
-#
-#             max_error = np.mean(max_errors)
-#             l50Error = np.mean(l50Errors)
-#             l90Error = np.mean(l90Errors)
-#             l95Error = np.mean(l95Errors)
-#             l99Error = np.mean(l99Errors)
-#
-#             # Write results to file
-#             result_root = os.path.join(".", "Result")
-#             baseline_folder = os.path.join(result_root, "ours+FE1")
-#             if not os.path.exists(baseline_folder):
-#                 os.makedirs(baseline_folder)
-#             if dataset == "aol dataset":
-#                 data_folder = os.path.join(baseline_folder, "aol_data")
-#             else:
-#                 data_folder = os.path.join(baseline_folder, "simulated_data")
-#             if not os.path.exists(data_folder):
-#                 os.makedirs(data_folder)
-#             outfile_name = f"FE1_n{n}_B{d}_attacker{k}.txt"
-#             outfile_path = os.path.join(data_folder, outfile_name)
-#
-#             with open(outfile_path, 'w', encoding='utf-8') as f:
-#                 f.write("L-inf error: " + str(max_error) + "\n")
-#                 f.write("l50error: " + str(l50Error) + "\n")
-#                 f.write("l90error: " + str(l90Error) + "\n")
-#                 f.write("l95error: " + str(l95Error) + "\n")
-#                 f.write("l99error: " + str(l99Error) + "\n")
-#                 f.write("#messages per user: " + str(nmessages_per_user) + "\n")
-#
-#             print(f"comp n={n} B={d}")
