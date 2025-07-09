@@ -122,8 +122,8 @@ def generate_data(distribution, n, d):
 def main(argv):
     # Settings to iterate through
     global malicious_users
-    # protocols = ["simulate CSUZZ", "simulate BBGN", "simulate GKMPS", "simulate ours+BBGN", "simulate ours+GKMPS"]
-    protocols = ["simulate ours+BBGN"]
+    protocols = ["simulate CSUZZ", "simulate BBGN", "simulate GKMPS", "simulate ours+BBGN", "simulate ours+GKMPS"]
+    # protocols = ["simulate ours+BBGN"]
     protocol_handlers = {
         "BBGN": advanced_HSDP.baselineBBGN,
         "ours+BBGN": advanced_HSDP.ours_BBGN,
@@ -137,17 +137,17 @@ def main(argv):
         # "BBGN_recursive": BBGN_recursive.run_recursive
     }
     # list_num_users = [2 ** 12, 2 ** 16, 2 ** 20, 2 ** 24]
-    list_num_users = [2 ** 24]
+    list_num_users = [2 ** 16]
     list_domain = [2]
     list_k = [1]
     # list_epsilon = [0.5, 1, 2, 4]
     list_epsilon = [1]
     # list_lambda = [4, 8, 32, 64, 128, 2048, 4096]
-    list_lambda = [64]
+    list_lambda = [256]
     # list_dataset = ["Adult", "SF_Salaries", "Ont_Salaries", "BR_Salaries"]
     list_dataset = ["Adult"]
     list_problem = ["Bit Counting", "Summation"]
-    list_distribution = ["Unif", "Zipf", "Gauss"]
+    list_distribution = ["Gauss"]
     problem = list_problem[0]
 
     # Fixed parameters
@@ -159,7 +159,7 @@ def main(argv):
 
     # Store results in result directory
     result_root = os.path.join(".", "Result")
-    data_mode = "Real-world"
+    data_mode = "Simulate"
     if data_mode == "Real-world":
         for dataset in list_dataset:
             value, n, d = load_dataset(problem, dataset)
@@ -225,7 +225,7 @@ def main(argv):
                     end_time = time.time()
                     cost_sec = end_time - start_time
 
-                    true_sum = sum(value)  # 所有轮次输入一致，取第一轮即可
+                    true_sum = sum(value)
                     relative_errors = [err / true_sum for err in errors]
                     avg_relative_error = sum(np.sort(relative_errors)[10:-10]) / (len(relative_errors) - 20)
 
@@ -296,7 +296,7 @@ def main(argv):
                                 for protocol_name in protocols:
                                     # Create subfolder named after baseline in Result/
                                     baseline_folder = os.path.join(result_root,
-                                                                   f"{protocol_name}")
+                                                                   f"{protocol_name}",f"{distribution}")
                                     if not os.path.exists(baseline_folder):
                                         os.makedirs(baseline_folder)
                                     # problem_folder = os.path.join(baseline_folder, f"{problem}/eps")
