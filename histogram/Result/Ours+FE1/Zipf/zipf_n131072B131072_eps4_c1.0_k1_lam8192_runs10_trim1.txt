@@ -1,0 +1,12 @@
+=== Ours+FE1 Results (ZIPF - n=131072, B=131072) ===
+Epsilon: 4
+C parameter: 1.0
+Attackers: 1
+
+lambda: 8192
+max_error: 3196.1157990811016
+l50_error: 78.92264988307191
+l90_error: 192.30193046617327
+l95_error: 229.27010137557727
+l99_error: 301.4322618287362
+msg_count: 409.9824484706885
