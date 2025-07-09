@@ -306,7 +306,7 @@ def main(argv):
                                     #     os.makedirs(dataset_folder)
                                     # Define output filename
 
-                                    outfile_name = f"result_n{n}_d{d - 1}_k{k}_n{n}_lam{lambda_n}.txt"
+                                    outfile_name = f"result_n{n}_d{d - 1}_k{k}_lam{lambda_n}.txt"
                                     outfile_path = os.path.join(baseline_folder, outfile_name)
 
                                     print("=========================")
