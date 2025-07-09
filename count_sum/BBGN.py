@@ -2,10 +2,6 @@ import math
 import random
 import numpy as np
 
-'''
-    IKOS protocol
-    1
-'''
 
 
 class BBGN:
@@ -17,13 +13,12 @@ class BBGN:
         self.name = "BBGN"
 
         # what's this
-        self.domain = n * U * 10  # 限制所有运算在有限域上进行
+        self.domain = n * U * 10  # Restrict all computations to finite field arithmetic
         self.sigma = 40  # statistical security parameter
         self.m = max(3,
                      int(math.ceil((2 * self.sigma + math.log2(self.domain)) / (math.log2(n) - math.log2(math.e)) + 1)))
-        # m: number of messages per user sends. ->增加用户数量，可以在相同安全强度要求下减少单个用户发送的消息数
+        # m: number of messages per user sends. -> Higher user count enables fewer messages per user at equivalent security levels.
 
-    # 返回每个用户发送消息的估计值
     def EstimateMessageNumber(self):
         return self.m
 
@@ -34,11 +29,11 @@ class BBGN:
 
         messages = []
         # add central noise
-        # 这里不用发送message的方式？！
         value += np.random.negative_binomial(1.0 / self.n, 1 - math.exp(-self.epsilon / self.U))
         value -= np.random.negative_binomial(1.0 / self.n, 1 - math.exp(-self.epsilon / self.U))
         # random split to m shares
-        # 目的是提高隐私性，分片数量越高，单分片的信息熵越高。如果不分片，analyzer能直接看到value
+        # Increases privacy - higher shard count raises per-shard entropy.
+        # Unsharded values are directly visible to analyzer.
         valuem = value
         for _ in range(self.m - 1):
             valuei = random.randint(0, self.domain - 1)
