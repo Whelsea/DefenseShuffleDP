@@ -6,6 +6,7 @@ This repository contains the implementation of our unified framework for evaluat
 
 ## 📁 Project Structure
 
+```
 DefenseShuffleDP
 ├─count_sum
 │  │  advanced_HSDP.py
@@ -30,7 +31,7 @@ DefenseShuffleDP
        ├─Gauss
        ├─SF_Salaries
        └─Zip
-
+```
 ---
 
 ## 🚀 How to Run
