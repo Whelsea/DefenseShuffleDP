@@ -61,7 +61,7 @@ We evaluate the following protocols under the shuffle DP model for `count` and `
   *File:* `count_sum/GKMPS.py`  
 - **BBGN**  
   *File:* `count_sum/BBGN.py`  
-- **Our Framework (CSUZZ, Ours+GKMPS, Ours+BBGN)**  
+- **CSUZZ and our Framework (Ours+GKMPS, Ours+BBGN)**  
   *File:* `count_sum/advanced_HSDP.py`
   
 ### Histogram Queries
@@ -75,5 +75,5 @@ We evaluate the following protocols for `histogram` (i.e., frequency estimation)
 - **Ours+FE1（Ours+LWY）**  
   *File:* `histogram/simulate_ours_fe.py`  
 
-
+---
 ## Dataset
