@@ -50,7 +50,7 @@ Each subdirectory includes a standalone experiment script:
 
 The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
 
-
+---
 ## 🧪 Supported Methods
 
 ### Count / Sum Queries
