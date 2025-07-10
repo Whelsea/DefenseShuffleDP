@@ -77,3 +77,21 @@ We evaluate the following protocols for `histogram` (i.e., frequency estimation)
 
 ---
 ## Dataset
+We evaluate both synthetic and real-world datasets:
+
+### Synthetic Datasets
+We simulate data under three types of distributions: **Uniform**, **Zipfian**, **Gaussian**.
+
+For count and sum queries, data generation is implemented in  
+`count_sum/run_experiments.py` → `generate_data()`.
+
+For histogram queries, pre-generated datasets are located under `histogram/data/`. (except uniform distribution)
+
+### Real-world Datasets
+
+| Dataset | Use Case | Description |
+|--------|----------|-------------|
+| [Adult (UCI)](https://archive.ics.uci.edu/dataset/2/adult) | Count/Sum | Uses `sex` or `age` field |
+| [SF Salaries](https://www.kaggle.com/datasets/kaggle/sf-salaries) | Count/Sum/Hist | Uses `BasePay` column |
+| [Brazil Salaries](https://www.kaggle.com/datasets/gustavomodelli/monthly-salary-of-public-worker-in-brazil) | Count/Sum/Hist | Uses `total_salry` column |
+| [AOL Search Logs](http://www.cim.mcgill.ca/~dudek/206/Logs/AOL-user-ct-collection/) | Histogram | We use `user-ct-test-collection-01.txt` |
