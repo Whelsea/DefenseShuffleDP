@@ -1,6 +1,6 @@
 # DefenseShuffleDP
 
-This repository contains the implementation of our unified framework for evaluating frequency-based queries under the shuffle differential privacy model. We evaluate three types of queries: **bit countint**, **summation**, and **histogram**. Each query type is organized into a dedicated folder and supports multiple protocols including state-of-the-art baselines and our own designs.
+This repository contains the implementation of our unified framework for evaluating frequency-based queries under the shuffle differential privacy model. We evaluate three types of queries: **bit count**, **summation**, and **histogram**. Each query type is organized into a dedicated folder and supports multiple protocols including state-of-the-art baselines and our own designs.
 
 ---
 
