@@ -30,7 +30,7 @@ C = 1.0
 # ------------------------------------------------------------
 #   Set lambda
 #   Input: n
-#   Output: logn * log(1/delta) * c
+#   Output: logn * log(1/delta) * c (we can choose optimal lambda for specific dataset by setting c)
 # ------------------------------------------------------------
 def find_lambda(n):
     if custom_lambda_n is not None:
