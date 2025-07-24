@@ -42,11 +42,25 @@ Each subdirectory includes a standalone experiment script:
   ```bash
   cd count_sum
   python run_experiments.py
+  
+All experimental settings for count and sum queries are configured in
+count_sum/run_experiments.py, inside the main() function.
 
+To customize which protocols to run, modify the following list:
+protocols = [
+    "simulate CSUZZ", 
+    "simulate BBGN", 
+    "simulate GKMPS", 
+    "simulate ours+BBGN", 
+    "simulate ours+GKMPS"
+]
+
+  
 - For `histogram` queries:
   ```bash
   cd histogram
   python run_experiments.py
+
 
 The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
 
