@@ -38,7 +38,7 @@ class FE1Simulator:
 
     def get_theta_fe1(self):
         """
-        theta: error bound （can be adjust to different settings）
+        theta: error bound (can be adjust to different settings)
         """
         b = self.b
         pcol = self.pcol
