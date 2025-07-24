@@ -46,8 +46,8 @@ Each subdirectory includes a standalone experiment script:
 All experimental settings for count and sum queries are configured in
 `count_sum/run_experiments.py`, inside the `main()` function.
 
-To customize which protocols to run, modify the following list:
-```bash
+- To customize which protocols to run, modify the following list:
+    ```bash
     protocols = [
         "simulate CSUZZ",
         "simulate BBGN",
@@ -56,8 +56,8 @@ To customize which protocols to run, modify the following list:
         "simulate ours+GKMPS"
     ]
 
-To adjust experiment parameters, modify the following lists:
-```bash
+- To adjust experiment parameters, modify the following lists:
+    ```bash
     list_num_users = [2 ** 16]           # Number of users
     list_domain = [2]                    # Data domain size
     list_k = [1]                         # Number of corrupted users
