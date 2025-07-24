@@ -603,12 +603,12 @@ def simulate_ours_BBGN(values):
             # messages
             total_messages += max(3, int(math.ceil((2 * sigma + math.log2(group_size * (domain - 1) * 10)) / (
                     math.log2(group_size) - math.log2(math.e)) + 1)))
-            if r == L - 1:
-                print(f"U:{domain}, n:{n}")
-                print(math.ceil(math.log2(10 * (domain - 1) * n)))
-                print(f"n/lambda={n / lambda_n},{math.ceil(math.log2(2 * n / lambda_n - 1))}")
-                print(
-                    f"Bits per message: {math.ceil(math.log2(10 * (domain - 1) * n) + math.ceil(math.log2(2 * n / lambda_n - 1)))}")
+            # if r == L - 1:
+                # print(f"U:{domain}, n:{n}")
+                # print(math.ceil(math.log2(10 * (domain - 1) * n)))
+                # print(f"n/lambda={n / lambda_n},{math.ceil(math.log2(2 * n / lambda_n - 1))}")
+                # print(
+                #     f"Bits per message: {math.ceil(math.log2(10 * (domain - 1) * n) + math.ceil(math.log2(2 * n / lambda_n - 1)))}")
         nmessages_per_user.append(total_messages)
 
         # ========== (3) simulate_analyzer: detection + recovery ==========
