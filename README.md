@@ -39,36 +39,46 @@ DefenseShuffleDP
 Each subdirectory includes a standalone experiment script:
 
 - For `count` and `sum` queries:
+
   ```bash
   cd count_sum
   python run_experiments.py
-  
-All experimental settings for count and sum queries are configured in
-`count_sum/run_experiments.py`, inside the `main()` function.
+  ```
 
-    - To customize which protocols to run, modify the following list:
-        ```bash
-        protocols = [
-            "simulate CSUZZ",
-            "simulate BBGN",
-            "simulate GKMPS",
-            "simulate ours+BBGN",
-            "simulate ours+GKMPS"
-        ]
-    - To adjust experiment parameters, modify the following lists:
-        ```bash
-        list_num_users = [2 ** 16]           # Number of users
-        list_domain = [2]                    # Data domain size
-        list_k = [1]                         # Number of corrupted users
-        list_epsilon = [1]                   # Privacy budget
-        list_lambda = [256]                 # Bottom-group size (Fill None if no manual setting is required)
-        list_dataset = ["Adult"]            # Dataset: "Adult", "SF_Salaries", etc.
-        list_problem = ["Bit Counting"]     # Query type: "Bit Counting" or "Summation"
-        list_distribution = ["Gauss"]       # Distribution type for synthetic data
+  - All experimental settings for count and sum queries are configured in
+    `count_sum/run_experiments.py`, inside the `main()` function.
+
+  - To customize which protocols to run, modify the following list:
+
+    ```python
+    protocols = [
+        "simulate CSUZZ",
+        "simulate BBGN",
+        "simulate GKMPS",
+        "simulate ours+BBGN",
+        "simulate ours+GKMPS"
+    ]
+    ```
+
+  - To adjust experiment parameters, modify the following lists:
+
+    ```python
+    list_num_users = [2 ** 16]           # Number of users
+    list_domain = [2]                    # Data domain size
+    list_k = [1]                         # Number of corrupted users
+    list_epsilon = [1]                   # Privacy budget
+    list_lambda = [256]                  # Bottom-group size (Fill None if no manual setting is required)
+    list_dataset = ["Adult"]             # Dataset: "Adult", "SF_Salaries", etc.
+    list_problem = ["Bit Counting"]      # Query type: "Bit Counting" or "Summation"
+    list_distribution = ["Gauss"]        # Distribution type for synthetic data
+    ```
+
 - For `histogram` queries:
+
   ```bash
   cd histogram
   python run_experiments.py
+  ```
 
 
 The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
