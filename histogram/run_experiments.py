@@ -316,10 +316,10 @@ def main():
     # parameter setting
     # algorithms = ["Flip", "FE1", "Ours+FE1"]
     algorithms = ["Flip"]
-    data_modes = ["aol"]  # ["unif", "zipf", "gauss", "aol", "sf_salary"]
+    data_modes = ["aol"]  # ["unif", "zipf", "gauss", "aol", "sf_sal", "br_sal"]
     # list_n = [2 ** 12, 2 ** 16, 2 ** 20, 2 ** 24]
     list_n = [2 ** 17]
-    list_B = [131072]
+    list_B = [2 ** 17]
     list_epsilon = [4]
     list_c = [1.0]
     list_k = [1]
@@ -373,7 +373,7 @@ def main():
                                                     data, n, B, epsilon, delta, 2, k, fixed_num_runs, fixed_trim_count
                                                 )
 
-                                            # 保存结果
+                                            # save the results
                                             save_results(
                                                 results, algorithm, data_mode, n, B, lambda_n, epsilon, c, k,
                                                 {"runs": fixed_num_runs, "trim": fixed_trim_count}
