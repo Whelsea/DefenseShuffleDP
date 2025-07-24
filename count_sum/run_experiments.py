@@ -158,7 +158,7 @@ def main(argv):
 
     # Store results in result directory
     result_root = os.path.join(".", "Result")
-    data_mode = "Simulate"
+    data_mode = "Simulate" # Simulate or Real-world
     if data_mode == "Real-world":
         for dataset in list_dataset:
             value, n, d = load_dataset(problem, dataset)
