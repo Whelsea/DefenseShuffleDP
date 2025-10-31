@@ -151,7 +151,13 @@ def mu_search(n: int, epsilon: float, delta: float) -> float:
             ri = mi
         else:
             le = mi
-    return ri * n
+    # The optimal mu is ri * n.
+    # return ri * n 
+    
+    # Note on small epsilon: The optimal mu derived from the binary search (ri * n) 
+    # may exhibit poor performance (or stability) when epsilon is small.
+    # Therefore, we use the theoretical bound presented in the FE1 paper as a robust and stable alternative.
+    return 32 * math.log(2 / self.delta) / (self.epsilon ** 2)
 
 # ======================  FE1  ======================
 class FE1Baseline:
