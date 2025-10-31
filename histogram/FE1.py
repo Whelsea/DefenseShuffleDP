@@ -1,0 +1,296 @@
+import math
+import time
+import numpy as np
+from typing import List, Tuple
+from collections import Counter
+from multiprocessing import Pool, cpu_count, set_start_method
+
+# macOS/Windows: spawn；Linux: fork
+try:
+    set_start_method("spawn")
+except RuntimeError:
+    pass
+
+# ====================== Numba：Speedup ======================
+import numba
+
+@numba.njit
+def mod_pow(base: int, exp: int, mod: int) -> int:
+    res = 1
+    b = base % mod
+    e = exp
+    while e > 0:
+        if e & 1:
+            res = (res * b) % mod
+        b = (b * b) % mod
+        e >>= 1
+    return res
+
+@numba.njit
+def _process_chunk_jit(U, V, W, start, end, B, q, b, rounds_base):
+    local = np.zeros(B + 1, dtype=np.int64)
+    for i in range(start, end):
+        u = U[i]
+        v = V[i]
+        w = W[i]
+        invu = mod_pow(u, q - 2, q)
+        start_id = (invu * ((w - v + q) % q)) % q
+        step     = (invu * b) % q
+        id_ = start_id
+        for _ in range(rounds_base):
+            if 1 <= id_ <= B:
+                local[id_] += 1
+            id_ += step
+            if id_ >= q:
+                id_ -= q
+    return local
+
+def _mp_worker(args):
+    return _process_chunk_jit(*args)
+
+def analyzers_speedup_mp(U: np.ndarray, V: np.ndarray, W: np.ndarray,
+                         B: int, q: int, b: int, n: int, rho: float, pcol: float,
+                         workers: int | None = None) -> np.ndarray:
+    assert U.shape == V.shape == W.shape
+    if U.dtype != np.int64: U = U.astype(np.int64, copy=False)
+    if V.dtype != np.int64: V = V.astype(np.int64, copy=False)
+    if W.dtype != np.int64: W = W.astype(np.int64, copy=False)
+
+    M = U.shape[0]
+    rounds_base = q // b + 1
+
+    # Warm-up JIT (Avoid the first compilation of child processes)
+    _process_chunk_jit(U[:1], V[:1], W[:1], 0, 1, B, q, b, 1)
+
+    if workers is None:
+        workers = max(1, cpu_count() - 1)
+
+    bounds = np.linspace(0, M, workers + 1, dtype=np.int64)
+    tasks = []
+    for i in range(workers):
+        start = int(bounds[i]); end = int(bounds[i + 1])
+        if start < end:
+            tasks.append((U, V, W, start, end, int(B), int(q), int(b), int(rounds_base)))
+
+    with Pool(processes=workers) as pool:
+        parts = pool.map(_mp_worker, tasks)
+
+    freq_counts = np.zeros(B + 1, dtype=np.int64)
+    for part in parts:
+        freq_counts += part
+
+    freq = freq_counts.astype(np.float64)
+    freq = (freq - n * rho / b - n * pcol) / (1.0 - pcol)
+    return freq
+
+# ====================== search μ  ======================
+def next_prime_at_least(m: int) -> int:
+    if m <= 2:
+        return 2
+    def is_prime(p: int) -> bool:
+        small = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29]
+        for tp in small:
+            if p == tp:
+                return True
+            if p % tp == 0:
+                return False
+        d, s = p - 1, 0
+        while d % 2 == 0:
+            d //= 2
+            s += 1
+        for a in [2, 7, 61]:
+            if a % p == 0:
+                continue
+            x = pow(a, d, p)
+            if x == 1 or x == p - 1:
+                continue
+            ok = False
+            for _ in range(s - 1):
+                x = (x * x) % p
+                if x == p - 1:
+                    ok = True
+                    break
+            if not ok:
+                return False
+        return True
+    q = max(2, m)
+    while not is_prime(q):
+        q += 1
+    return q
+
+def mu_search(n: int, epsilon: float, delta: float) -> float:
+    epow = math.exp(epsilon)
+    def checker(p: float) -> bool:
+        prob = np.empty(n + 1, dtype=np.float64)
+        accprob = np.empty(n + 1, dtype=np.float64)
+        tp2 = np.empty(n + 1, dtype=np.float64)
+        tp2[0] = 1.0
+        for i in range(1, n + 1):
+            tp2[i] = tp2[i - 1] * (1.0 - p)
+        C = 1.0
+        prob[0] = C * tp2[n]
+        for i in range(1, n + 1):
+            C = C * (n - (i - 1)) * p / i
+            prob[i] = C * tp2[n - i]
+        accprob[n] = prob[n]
+        for i in range(n - 1, -1, -1):
+            accprob[i] = accprob[i + 1] + prob[i]
+        pro = 0.0
+        for x2 in range(0, n + 1):
+            x1 = int(math.ceil(epow * x2 - 1.0))
+            if x1 < 0:
+                x1 = 0
+            if x1 >= n:
+                break
+            pro += prob[x2] * accprob[x1]
+        return pro <= delta
+    le, ri = 0.0, 1000.0 / n
+    while le + 0.1 / n < ri:
+        mi = (le + ri) * 0.5
+        if checker(mi):
+            ri = mi
+        else:
+            le = mi
+    return ri * n
+
+# ======================  FE1  ======================
+class FE1Baseline:
+    def __init__(self, n: int, B: int, epsilon: float, delta: float, c: float,
+                 use_mu_search: bool = True, seed: int | None = None):
+        self.n = int(n)
+        self.B = int(B)
+        self.epsilon = float(epsilon)
+        self.delta = float(delta)
+        self.c = float(c)
+
+        self.b = max(2, int(n / (math.log(n) ** self.c)))
+        self.q = next_prime_at_least(max(2, B))
+
+        if use_mu_search:
+            self.mu = mu_search(self.n, self.epsilon, self.delta)
+        else:
+            self.mu = 32.0 * math.log(2.0 / self.delta) / (self.epsilon ** 2)
+        print(self.mu)
+        self.sample_prob = self.mu * (self.b / self.n)
+        self.send_fixed_messages = int(math.floor(self.sample_prob))
+        self.remaining_prob = self.sample_prob - self.send_fixed_messages
+
+        self.collision_prob = (self.q // self.b) * ((self.q % self.b) + self.q - self.b) / (self.q * (self.q - 1))
+
+        self.messages: List[Tuple[int, int, int]] = []
+        self.rng = np.random.default_rng(seed)
+
+    def bits_per_message(self) -> int:
+        return math.ceil(math.log2(self.q)) * 2 + math.ceil(math.log2(self.b))
+
+    def local_randomizer(self, x: int) -> List[Tuple[int, int, int]]:
+        assert 1 <= x <= self.B
+        msgs: List[Tuple[int, int, int]] = []
+        u = self.rng.integers(1, self.q)
+        v = self.rng.integers(1, self.q + 1)
+        w = ((u * x + v) % self.q) % self.b
+        msgs.append((int(u), int(v), int(w)))
+        send = self.send_fixed_messages + (1 if self.rng.random() < self.remaining_prob else 0)
+        if send > 0:
+            uu = self.rng.integers(1, self.q, size=send)
+            vv = self.rng.integers(1, self.q + 1, size=send)
+            ww = self.rng.integers(0, self.b, size=send)
+            msgs.extend([(int(uu[i]), int(vv[i]), int(ww[i])) for i in range(send)])
+        return msgs
+
+    def randomize_all(self, values: List[int], shuffle: bool = True) -> List[Tuple[int, int, int]]:
+        self.messages = []
+        for v in values:
+            x = v + 1
+            self.messages.extend(self.local_randomizer(x))
+        if shuffle:
+            self.rng.shuffle(self.messages)
+        return self.messages
+
+    def analyzer_single_vectorized(self, query_id: int,
+                                   messages_np: Tuple[np.ndarray, np.ndarray, np.ndarray]) -> float:
+        U, V, W = messages_np
+        q = self.q; b = self.b; n = self.n
+        pcol = self.collision_prob; rho = self.sample_prob
+        cnt = np.sum(((U * query_id + V) % q) % b == W)
+        return (cnt - n * rho / b - n * pcol) / (1.0 - pcol)
+
+    def to_numpy_messages(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        arr = np.array(self.messages, dtype=np.int64)
+        return arr[:, 0], arr[:, 1], arr[:, 2]
+
+
+
+
+# ====================== test code non-speedup vs speedup ======================
+def run_once(n=100_000, B=(1 << 22), epsilon=1.0, delta=None, c=1.0,
+             seed=1234, num_queries=10_000, workers=4, verbose=True):
+    if delta is None:
+        delta = 1.0 / (n * n)
+
+    rng = np.random.default_rng(seed)
+    values = rng.integers(0, B, size=n, dtype=np.int64)
+
+    fe = FE1Baseline(n=n, B=B, epsilon=epsilon, delta=delta, c=c, use_mu_search=True, seed=seed)
+    t0 = time.time()
+    _ = fe.randomize_all(values.tolist(), shuffle=True)
+    U, V, W = fe.to_numpy_messages()
+    t1 = time.time()
+
+    rho = fe.sample_prob
+    k = int(math.floor(rho))
+    frac = rho - k
+    total = len(U)
+    successes = total - n - n * k
+    exp_successes = n * frac
+    std_successes = math.sqrt(n * frac * (1.0 - frac)) if 0 < frac < 1 else 0.0
+    z = (successes - exp_successes) / std_successes if std_successes > 0 else 0.0
+    if verbose:
+        print(f"[c={c}] rho={rho:.6f}, msgs/user(theory)={1+rho:.6f}, msgs/user(sim)={total/n:.6f}")
+        print(f"[c={c}] successes={successes} (exp={exp_successes:.2f}, std={std_successes:.2f}, z={z:.2f})")
+        print(f"[c={c}] q={fe.q}, b={fe.b}, pcol={fe.collision_prob:.7g}")
+        print(f"[c={c}] randomization time: {t1 - t0:.2f}s, total messages={total}")
+
+    # non-speed
+    used = set(int(v) + 1 for v in values)
+    queries = []
+    while len(queries) < num_queries:
+        cand = rng.integers(1, B + 1, size=num_queries, dtype=np.int64)
+        cand = [int(x) for x in cand if x not in used]
+        queries.extend(cand)
+    queries = np.array(queries[:num_queries], dtype=np.int64)
+    cnt = Counter(int(v) + 1 for v in values)
+    g_true = np.array([cnt.get(int(x), 0) for x in queries], dtype=np.int64)
+
+    t2 = time.time()
+    g_hat_non = np.array([fe.analyzer_single_vectorized(int(x), (U, V, W)) for x in queries],
+                         dtype=np.float64)
+    t3 = time.time()
+    err_non = np.abs(g_hat_non - g_true)
+    non_speedup_sec = t3 - t2
+    if verbose:
+        print(f"[non-speedup] {len(queries)} queries in {non_speedup_sec:.2f}s, "
+              f"q95={np.quantile(err_non,0.95):.2f}, max={err_non.max():.2f}")
+
+    # speedup
+    t4 = time.time()
+    freq_all = analyzers_speedup_mp(U, V, W, B=fe.B, q=fe.q, b=fe.b,
+                                    n=fe.n, rho=fe.sample_prob, pcol=fe.collision_prob,
+                                    workers=workers)
+    t5 = time.time()
+    speedup_sec = t5 - t4
+
+    realvec = np.zeros(B + 1, dtype=np.int64)
+    for v in values:
+        realvec[v + 1] += 1
+    err_all = np.abs(freq_all - realvec)
+    if verbose:
+        print(f"[speedup • FULL DOMAIN] analyzed {B} ids in {speedup_sec:.2f}s, "
+              f"q95={np.quantile(err_all[1:],0.95):.2f}, max={err_all[1:].max():.2f}")
+        if non_speedup_sec > 0:
+            print(f"[ratio] speedup/non-speedup time = {speedup_sec/non_speedup_sec:.2f}x")
+
+    return {"non_speedup_sec": non_speedup_sec, "speedup_sec": speedup_sec}
+
+if __name__ == "__main__":
+    _ = run_once(n=2**17, B=2**17,epsilon=1, c=3.0, seed=1, workers=4)
