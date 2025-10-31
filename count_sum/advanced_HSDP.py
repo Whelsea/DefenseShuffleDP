@@ -17,6 +17,9 @@ real_sums = []
 sorted_malicious = [[]]
 malicious_users = []
 custom_lambda_n = None
+attack_num_msgs = None  # Default attacker sends n messages per layer
+# ============== Attack detection monitor ==============
+detection_per_run = []  # Records whether attackers are detected per run (True/False)
 # ============== GKMPS =============
 gamma = 0.3
 beta = 0.1
@@ -30,7 +33,7 @@ C = 1.0
 # ------------------------------------------------------------
 #   Set lambda
 #   Input: n
-#   Output: logn * log(1/delta) * c (we can choose optimal lambda for specific dataset by setting c)
+#   Output: logn * log(1/delta) * c
 # ------------------------------------------------------------
 def find_lambda(n):
     if custom_lambda_n is not None:
@@ -112,78 +115,88 @@ def Analyzer(baseline, all_messages):
     L = int(math.ceil(math.log2(math.ceil(num_users / lambda_n)))) + 1
     max_r = L - 1
     Q = [[] for _ in range(L)]
-    eps_part1 = epsilon / 2 / (L - 1)  # split privacy budget
+
+    eps_part1 = epsilon / 2 / (L - 1)  # split privacy budget for lower levels
     eps_part2 = epsilon / 2
     delta_part1 = delta / 2 / (L - 1)
     delta_part2 = delta / 2
-    # beta_part = beta / (2 * num_users / lambda_n - 1)
     beta_part1 = beta / 2 / (2 ** L - 2)
     beta_part2 = beta / 2
 
-    # ========== (1) Bottom-layer Detection ( r=0 ) ==========
+    # ========= Pre-calculate theta for each layer =========
+    theta_per_layer = [0] * L
+    for r in range(L):
+        if r == 0:
+            eps_r = eps_part1
+            beta_r = beta_part1
+        elif r == L - 1:
+            eps_r = eps_part2 * (2 ** r - 1) / (2 ** r)
+            beta_r = beta_part2
+        else:
+            eps_r = eps_part1 * (2 ** r - 1) / (2 ** r)
+            beta_r = beta_part1
 
+        theta_per_layer[r] = get_theta(baseline[r], beta_r)
+        # Note: get_theta already relies on the baseline[r]'s internal epsilon/domain setting
+
+    # ========= (1) Bottom-layer Detection ( r=0 ) =========
     Q[0] = [0.0] * math.ceil(num_users / lambda_n)
     baseline_0 = baseline[0]
-    theta = get_theta(baseline_0, beta_part1)
-    group_count = math.ceil(num_users / lambda_n)
+    theta_0 = theta_per_layer[0]
+    group_count = len(Q[0])
+
     for g in range(group_count):
-        # compute result of gourp g
         start_idx = g * lambda_n
         end_idx = min((g + 1) * lambda_n, num_users)
         group_messages = [all_messages[i][0] for i in range(start_idx, end_idx)]
         flattened_group_messages = list(chain.from_iterable(group_messages))
         result = baseline_0.Analyzer(flattened_group_messages, values='')
-        if result < -2 * theta or result > (domain - 1) * lambda_n + 2 * theta:
+
+        if result < -theta_0 or result > (domain - 1) * lambda_n + theta_0:
             Q[0][g] = float('-inf')
-            # save_snapshot.save_q_snapshot(group_messages, "invalid_0")
         else:
             Q[0][g] = result
 
-    # ========== (2) Higher-layer Group Detection ==========
-    # level 1-logn+1
+    # ========= (2) Higher-layer Detection =========
     for r in range(1, L):
         group_count = math.ceil(num_users / (lambda_n * (2 ** r)))
         Q[r] = np.zeros(group_count)
         group_size = lambda_n * (2 ** r)
         baseline_r = baseline[r]
 
+        theta_r = theta_per_layer[r]
+        theta_prev = theta_per_layer[r - 1]
+
         for g in range(group_count):
-            # check validness of subgroups
             left_idx = 2 * g
             right_idx = 2 * g + 1
             if Q[r - 1][left_idx] == float('-inf') or Q[r - 1][right_idx] == float('-inf'):
-                Q[r][g] = float('-inf') 
+                Q[r][g] = float('-inf')
                 continue
 
             start_idx = g * group_size
             end_idx = min((g + 1) * group_size, num_users)
             group_messages = [all_messages[i][r] for i in range(start_idx, end_idx)]
-            flattened_group_messages = list(chain.from_iterable(group_messages))
+            # flattened_group_messages = list(chain.from_iterable(group_messages))
+            flattened_group_messages = np.concatenate(group_messages)
             result = baseline_r.Analyzer(flattened_group_messages, values='')
 
-            # check difference between levels
             diff = abs(result - Q[r - 1][left_idx] - Q[r - 1][right_idx])
-            if r == L - 1:
-                theta_2 = get_theta(baseline_r, beta_part2)
-                if diff > 4 * theta + 2 * theta_2:
-                    Q[r][g] = float('-inf')
-                else:
-                    Q[r][g] = result
+            if diff > 2 * theta_prev + theta_r:
+                Q[r][g] = float('-inf')
             else:
-                if diff > 6 * theta:
-                    Q[r][g] = float('-inf')
-                    # save_snapshot.save_q_snapshot(group_messages, "invalidg_r")
-                else:
-                    Q[r][g] = result
+                Q[r][g] = result
 
-    # ========== (3) Recovery ==========
+    # ========= (3) Recovery =========
     A = Backtrack(max_r, Q)
-
     return A
 
 
 def Attack():
-    return [(domain - 1)] * num_users
+    if attack_num_msgs == None:
+        return [(domain - 1)] * num_users
+    else:
+        return [(domain - 1)] * attack_num_msgs
 
 
 # ------------------------------------------------------------
@@ -215,7 +228,7 @@ def HSDP(baseline, values, sorted_malicious):
 # ------------------------------------------------------------
 #  CSUZZ
 # ------------------------------------------------------------
-def simulateCSUZZ(values):
+def CSUZZ(values):
     dp_sums = []
     errors = []
     nmessages_per_user = []
@@ -233,7 +246,7 @@ def simulateCSUZZ(values):
 
     for t in range(times):
 
-        # sum of attackers
+        # sum of sttackers
         noisy_sum_attacker = 0
         for _ in sorted_malicious[t]:
             messages = Attack()
@@ -275,7 +288,8 @@ def init_GKMPS():
     gkmps_list = []
     for r in range(L - 1):
         # n=2^(r-1)*lambda (mind the privacy attack)
-        privacy_scale = max((2 ** r - 1) / (2 ** r), 1)
+        # privacy_scale = max((2 ** r - 1) / (2 ** r), 1)
+        privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
         gkmps_r = GKMPS.GKMPS(n=lambda_n * (2 ** r), domain=domain - 1, epsilon=eps_part1 * privacy_scale,
                               delta=delta_part1 * privacy_scale,
                               gamma=gamma)
@@ -302,7 +316,7 @@ def init_BBGN():
     delta_part = delta / (L)
     bbgn_list = []
     for r in range(L - 1):
-        privacy_scale = max((2 ** r - 1) / (2 ** r), 1)
+        privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
         bbgn_r = BBGN.BBGN(n=lambda_n * (2 ** r), U=domain - 1, epsilon=eps_part1 * privacy_scale,
                            delta=delta_part1 * privacy_scale)
         bbgn_list.append(bbgn_r)
@@ -347,7 +361,7 @@ def simulateGKMPS(values):
     gkmps_errors = []
     gkmps_nmessages = []
     for t in range(times):
-        # k attackers
+        # k 个 attacker
         honest_user_values = [values[t][idx] for idx in range(len(values[t]))
                               if idx not in sorted_malicious[t]]
         honest_user_proportion = (num_users - k) / num_users
@@ -417,6 +431,7 @@ def ours_GKMPS(values):
 
         nmessages_per_user.append(nmessages / (num_users - k))
         # save_snapshot.save_q_snapshot(baths, "bath")
+        print(f"complete {i} times")
     return dp_sums, errors, nmessages_per_user
 
 
@@ -436,9 +451,6 @@ def ours_BBGN(values):
 
 def baselineBBGN(values):
     bbgn = BBGN.BBGN(n=num_users, U=domain - 1, epsilon=epsilon, delta=delta)
-    # save_snapshot.save_1_snapshot(bbgn.m, "bbgn_m")
-    # setting = [num_users, epsilon, delta, domain - 1, gamma]
-    # save_snapshot.save_1_snapshot(setting,"settinggkmps")
     bbgn_sums = []
     bbgn_errors = []
     bbgn_nmessages = []
@@ -503,19 +515,39 @@ def simulate_analyzer(baseline_name, Q, L, lambda_n, beta, domain, eps_part1, ep
 
     beta_part1 = beta / 2 / (2 ** L - 2)
     beta_part2 = beta / 2
-    theta1 = get_theta_sim(baseline_name, eps_part1, domain - 1, beta_part1)
-    theta2 = get_theta_sim(baseline_name, eps_part2, domain - 1, beta_part2)
+    # theta1 = get_theta_sim(baseline_name, eps_part1, domain - 1, beta_part1)
 
+    theta = [0] * L
+    for r in range(L):
+        if r == 0:
+            eps_r = eps_part1
+            beta_r = beta_part1
+        elif r == L - 1:
+            eps_r = eps_part2 * (2 ** r - 1) / (2 ** r)
+            beta_r = beta_part2
+        else:
+            eps_r = eps_part1 * (2 ** r - 1) / (2 ** r)
+            beta_r = beta_part1
+        theta[r] = get_theta_sim(baseline_name, eps_r, domain - 1, beta_r)
+        print(f"theta[{r}]={theta[r]}")
+
+    global detection_per_run
+    detected_this_run = False
     # ========== (1) Detection (r=0) ==========
     group_count_0 = len(Q[0])
     for g in range(group_count_0):
         val = Q[0][g]
-        if val < -2 * theta1 or val > (domain - 1) * lambda_n + 2 * theta1:
+        # if val < -2 * theta1 or val > (domain - 1) * lambda_n + 2 * theta1:
+        if val < - theta[0] or val > (domain - 1) * lambda_n +  theta[0]:
             Q[0][g] = float('-inf')
-
+            detected_this_run = True
     # ========== (2) Detection (r>0) ==========
     for r in range(1, L):
         group_count_r = len(Q[r])
+        
+        theta1 = theta[r - 1]
+        theta2 = theta[r]
+
         for g in range(group_count_r):
             left_idx = 2 * g
             right_idx = 2 * g + 1
@@ -524,14 +556,12 @@ def simulate_analyzer(baseline_name, Q, L, lambda_n, beta, domain, eps_part1, ep
                 continue
             diff = abs(Q[r][g] - (Q[r - 1][left_idx] + Q[r - 1][right_idx]))
 
-            if r == L - 1:  # 顶层
-                if diff > 4 * theta1 + 2 * theta2:
-                    Q[r][g] = float('-inf')
-            else:
-                if diff > 6 * theta1:
-                    Q[r][g] = float('-inf')
+            if diff > 2 * theta1 + theta2:
+                Q[r][g] = float('-inf')
+                detected_this_run = True
 
-    # ========== (3) Backtrack 恢复 ==========
+    # ========== (3) Backtrack  ==========
+    detection_per_run.append(detected_this_run)
     dp_sum = Backtrack(L - 1, Q)
     return dp_sum
 
@@ -568,7 +598,8 @@ def simulate_ours_BBGN(values):
             group_size = lambda_n * (2 ** r)
             group_count = len(Q[r])
             eps_r = eps_part2 if (r == L - 1) else eps_part1
-            eps_r = eps_r * max((2 ** r - 1) / (2 ** r), 1)
+            privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
+            eps_r = eps_r * privacy_scale
 
             for g in range(group_count):
                 start_index = g * group_size
@@ -584,6 +615,7 @@ def simulate_ours_BBGN(values):
                 real_sum_attacker = 0
                 for i in sorted_malicious[t][left:right]:
                     messages = Attack()
+                    print("actual msgs from attacker",len(messages))
                     noisy_sum_attacker += sum(messages)
                     real_sum_attacker += values[t][i]
 
@@ -603,12 +635,12 @@ def simulate_ours_BBGN(values):
             # messages
             total_messages += max(3, int(math.ceil((2 * sigma + math.log2(group_size * (domain - 1) * 10)) / (
                     math.log2(group_size) - math.log2(math.e)) + 1)))
-            # if r == L - 1:
-                # print(f"U:{domain}, n:{n}")
-                # print(math.ceil(math.log2(10 * (domain - 1) * n)))
-                # print(f"n/lambda={n / lambda_n},{math.ceil(math.log2(2 * n / lambda_n - 1))}")
-                # print(
-                #     f"Bits per message: {math.ceil(math.log2(10 * (domain - 1) * n) + math.ceil(math.log2(2 * n / lambda_n - 1)))}")
+            if r == L - 1:
+                print(f"U:{domain}, n:{n}")
+                print(math.ceil(math.log2(10 * (domain - 1) * n)))
+                print(f"n/lambda={n / lambda_n},{math.ceil(math.log2(2 * n / lambda_n - 1))}")
+                print(
+                    f"Bits per message: {math.ceil(math.log2(10 * (domain - 1) * n) + math.ceil(math.log2(2 * n / lambda_n - 1)))}")
         nmessages_per_user.append(total_messages)
 
         # ========== (3) simulate_analyzer: detection + recovery ==========
@@ -697,3 +729,5 @@ def simulate_ours_GKMPS(values):
         dp_sums.append(dp_sum)
 
     return dp_sums, errors, nmessages_per_user
+
+
