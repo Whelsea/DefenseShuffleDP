@@ -13,7 +13,8 @@ class BBGN:
         self.name = "BBGN"
 
         # what's this
-        self.domain = n * U * 10  # Restrict all computations to finite field arithmetic
+        # self.domain = n * U * 10  # Restrict all computations to finite field arithmetic
+        self.domain = n * U * 10000  # Restrict for BSDP
         self.sigma = 40  # statistical security parameter
         self.m = max(3,
                      int(math.ceil((2 * self.sigma + math.log2(self.domain)) / (math.log2(n) - math.log2(math.e)) + 1)))
