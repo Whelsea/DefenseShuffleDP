@@ -52,11 +52,15 @@ Each subdirectory includes a standalone experiment script:
 
     ```python
     protocols = [
-        "simulate CSUZZ",
-        "simulate BBGN",
-        "simulate GKMPS",
-        "simulate ours+BBGN",
-        "simulate ours+GKMPS"
+        "CSUZZ",
+        "BBGN",
+        "GKMPS",
+        "ours+BBGN",
+        "ours+GKMPS",
+        "SUSDP+BBGN",
+        "SUSDP+GKMPS",
+        "BSDP+BBGN",
+        "BSDP+GKMPS"
     ]
     ```
 
@@ -66,6 +70,7 @@ Each subdirectory includes a standalone experiment script:
     list_num_users = [2 ** 16]           # Number of users
     list_domain = [2]                    # Data domain size
     list_k = [1]                         # Number of corrupted users
+    list_attack_msg = [None]             # Number of messages per corrupted user sends (Fill None if no manual setting is required)
     list_epsilon = [1]                   # Privacy budget
     list_lambda = [256]                  # Bottom-group size (Fill None if no manual setting is required)
     list_dataset = ["Adult"]             # Dataset: "Adult", "SF_Salaries", etc.
