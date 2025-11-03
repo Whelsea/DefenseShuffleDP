@@ -1,9 +1,10 @@
-
 import os
 import sys
 import time
 import numpy as np
 import pandas as pd
+import SUSDP
+import BSDP
 import advanced_HSDP
 import random
 import math
@@ -121,8 +122,8 @@ def generate_data(distribution, n, d):
 def main(argv):
     # Settings to iterate through
     global malicious_users
-    protocols = ["simulate CSUZZ", "simulate BBGN", "simulate GKMPS", "simulate ours+BBGN", "simulate ours+GKMPS"]
-    # protocols = ["simulate ours+BBGN"]
+    # protocols = ["CSUZZ", "simulate BBGN", "simulate GKMPS", "simulate ours+BBGN", "simulate ours+GKMPS"]
+    protocols = ["BSDP+BBGN"]
     protocol_handlers = {
         "BBGN": advanced_HSDP.baselineBBGN,
         "ours+BBGN": advanced_HSDP.ours_BBGN,
@@ -132,33 +133,44 @@ def main(argv):
         "simulate ours+GKMPS": advanced_HSDP.simulate_ours_GKMPS,
         "simulate GKMPS": advanced_HSDP.simulateGKMPS,
         "simulate BBGN": advanced_HSDP.simulateBBGN,
-        "simulate CSUZZ": advanced_HSDP.simulateCSUZZ
+        "CSUZZ": advanced_HSDP.CSUZZ,
         # "BBGN_recursive": BBGN_recursive.run_recursive
+        "SUSDP+BBGN": SUSDP.SUSDP_BBGN,
+        "SUSDP+GKMPS": SUSDP.SUSDP_GKMPS,
+        "simulate SUSDP+BBGN": SUSDP.Simulate_SUSDP_BBGN_speed,
+        "simulate SUSDP+GKMPS": SUSDP.Simulate_SUSDP_GKMPS_speed,
+        "BSDP+BBGN": BSDP.BSDP_BBGN,
+        "BSDP+GKMPS": BSDP.BSDP_GKMPS,
+        "simulate BSDP+BBGN": BSDP.simulate_BSDP_BBGN_speed,
+        "simulate BSDP+GKMPS": BSDP.simulate_BSDP_GKMPS_speed,
     }
-    # list_num_users = [2 ** 12, 2 ** 16, 2 ** 20, 2 ** 24]
+    # list_num_users = [2**16,2**20,2**24]
     list_num_users = [2 ** 16]
     list_domain = [2]
-    list_k = [1]
+    # list_k = [1,2,4,8]
+    list_k=[1]
     # list_epsilon = [0.5, 1, 2, 4]
     list_epsilon = [1]
     # list_lambda = [4, 8, 32, 64, 128, 2048, 4096]
     list_lambda = [256]
-    # list_dataset = ["Adult", "SF_Salaries", "Ont_Salaries", "BR_Salaries"]
-    list_dataset = ["Adult"]
+    # list_dataset = ["Adult", "SF_Salaries","BR_Salaries"]
+    list_dataset = ["SF_Salaries","BR_Salaries"]
     list_problem = ["Bit Counting", "Summation"]
-    list_distribution = ["Gauss"]
+    list_distribution = ["Unif"]
+    # list_attack_msg = [1,4,16,64,256,300,350,400,425,450,475,500,600]
+    list_attack_msg = [None]
     problem = list_problem[0]
 
     # Fixed parameters
     fixed_epsilon = 1.0
     fixed_gamma = 0.3
     fixed_beta = 0.1
-    fixed_times = 100
+    fixed_times = 50
     fixed_sigma = 40
 
     # Store results in result directory
     result_root = os.path.join(".", "Result")
-    data_mode = "Simulate" # Simulate or Real-world
+    data_mode = "Simulate"
     if data_mode == "Real-world":
         for dataset in list_dataset:
             value, n, d = load_dataset(problem, dataset)
@@ -196,7 +208,7 @@ def main(argv):
                 advanced_HSDP.values = new_values
                 advanced_HSDP.real_sums = new_real_sums
                 advanced_HSDP.sorted_malicious = sorted_malicious
-
+                SUSDP.values = new_values
                 # Compare different protocols on the same values dataset
                 for protocol_name in protocols:
                     # Create subfolder named after baseline in Result/
@@ -211,7 +223,7 @@ def main(argv):
                     if not os.path.exists(dataset_folder):
                         os.makedirs(dataset_folder)
                     # Define output filename
-                    outfile_name = f"result_n{n}_d{d}_k{k}_lam{lambda_n}_beta_split.txt"
+                    outfile_name = f"result_n{n}_d{d}_k{k}_lam{lambda_n}_theta_scale.txt"
                     outfile_path = os.path.join(dataset_folder, outfile_name)
 
                     print("=========================")
@@ -228,7 +240,7 @@ def main(argv):
                     relative_errors = [err / true_sum for err in errors]
                     avg_relative_error = sum(np.sort(relative_errors)[10:-10]) / (len(relative_errors) - 20)
 
-                    print(f"✅ Average Relative Error (ARE): {avg_relative_error:.6f}")
+                    print(f"Average Relative Error (ARE): {avg_relative_error:.6f}")
 
                     print(f"Done. Elapsed: {cost_sec:.4f} seconds.")
 
@@ -258,87 +270,97 @@ def main(argv):
                     for eps in list_epsilon:
                         for lambda_n in list_lambda:
                             for k in list_k:
+                                for attack_num in list_attack_msg:
+                                    advanced_HSDP.attack_num_msgs = attack_num
+                                    print(
+                                        f"\n===== Running with Attack() sending {attack_num} fake msgs per layer =====")
                                 # ================ Set parameters in advanced_HSDP.py ================
-                                advanced_HSDP.custom_lambda_n = lambda_n
-                                advanced_HSDP.num_users = n
-                                advanced_HSDP.domain = d
-                                advanced_HSDP.epsilon = eps
-                                advanced_HSDP.delta = 1.0 / (n * n)
-                                advanced_HSDP.gamma = fixed_gamma
-                                advanced_HSDP.beta = fixed_beta
-                                advanced_HSDP.k = k
-                                advanced_HSDP.times = fixed_times
-                                advanced_HSDP.sigma = fixed_sigma
-                                # BBGN_recursive.times = fixed_times
+                                    advanced_HSDP.custom_lambda_n = lambda_n
+                                    advanced_HSDP.num_users = n
+                                    advanced_HSDP.domain = d
+                                    advanced_HSDP.epsilon = eps
+                                    advanced_HSDP.delta = 1.0 / (n * n)
+                                    advanced_HSDP.gamma = fixed_gamma
+                                    advanced_HSDP.beta = fixed_beta
+                                    advanced_HSDP.k = k
+                                    advanced_HSDP.times = fixed_times
+                                    advanced_HSDP.sigma = fixed_sigma
+                                    advanced_HSDP.detection_per_run = []
+                                    # BBGN_recursive.times = fixed_times
 
-                                # ================ Generate values and assign to advanced_HSDP ================
-                                new_values = []
-                                sorted_malicious = []
-                                new_real_sums = []
+                                    # ================ Generate values and assign to advanced_HSDP ================
+                                    new_values = []
+                                    sorted_malicious = []
+                                    new_real_sums = []
 
-                                malicious_users = []
-                                if k > 0:
-                                    malicious_users = set(random.sample(range(n), k))
+                                    malicious_users = []
+                                    if k > 0:
+                                        malicious_users = set(random.sample(range(n), k))
 
-                                for _ in range(fixed_times):
-                                    new_values.append(value.copy())
+                                    for _ in range(fixed_times):
+                                        new_values.append(value.copy())
 
-                                    new_real_sums.append(sum(value))
-                                    # ===================== Generate malicious_users =====================
-                                    sorted_malicious.append(sorted(malicious_users))
-                                advanced_HSDP.values = new_values
-                                advanced_HSDP.real_sums = new_real_sums
-                                advanced_HSDP.sorted_malicious = sorted_malicious
-                                # BBGN_recursive.data = value
+                                        new_real_sums.append(sum(value))
+                                        # ===================== Generate malicious_users =====================
+                                        sorted_malicious.append(sorted(malicious_users))
+                                    advanced_HSDP.values = new_values
+                                    advanced_HSDP.real_sums = new_real_sums
+                                    advanced_HSDP.sorted_malicious = sorted_malicious
+                                    # BBGN_recursive.data = value
 
-                                # Compare different protocols on the same values dataset
-                                for protocol_name in protocols:
-                                    # Create subfolder named after baseline in Result/
-                                    baseline_folder = os.path.join(result_root,
-                                                                   f"{protocol_name}",f"{distribution}")
-                                    if not os.path.exists(baseline_folder):
-                                        os.makedirs(baseline_folder)
-                                    # problem_folder = os.path.join(baseline_folder, f"{problem}/eps")
-                                    # if not os.path.exists(problem_folder):
-                                    #     os.makedirs(problem_folder)
-                                    # dataset_folder = os.path.join(problem_folder, "Simulated_data/eps")
-                                    # if not os.path.exists(dataset_folder):
-                                    #     os.makedirs(dataset_folder)
-                                    # Define output filename
+                                    # Compare different protocols on the same values dataset
+                                    for protocol_name in protocols:
+                                        # Create subfolder named after baseline in Result/
+                                        baseline_folder = os.path.join(result_root,
+                                                                       f"{protocol_name}",f"{distribution}")
+                                        if not os.path.exists(baseline_folder):
+                                            os.makedirs(baseline_folder)
+                                        # problem_folder = os.path.join(baseline_folder, f"{problem}/eps")
+                                        # if not os.path.exists(problem_folder):
+                                        #     os.makedirs(problem_folder)
+                                        # dataset_folder = os.path.join(problem_folder, "Simulated_data/eps")
+                                        # if not os.path.exists(dataset_folder):
+                                        #     os.makedirs(dataset_folder)
+                                        # Define output filename
 
-                                    outfile_name = f"result_n{n}_d{d - 1}_k{k}_lam{lambda_n}.txt"
-                                    outfile_path = os.path.join(baseline_folder, outfile_name)
+                                        outfile_name = f"result_n{n}_d{d - 1}_k{k}_n{n}_lam{lambda_n}_attackmsg{attack_num}_test.txt"
+                                        outfile_path = os.path.join(baseline_folder, outfile_name)
 
-                                    print("=========================")
-                                    print(f"Running {protocol_name} with n={n}, domain={d} ...")
-                                    start_time = time.time()
+                                        print("=========================")
+                                        print(f"Running {protocol_name} with n={n}, domain={d} ...")
+                                        start_time = time.time()
 
-                                    handler = protocol_handlers.get(protocol_name)
-                                    # if protocol_name == "BBGN_recursive":
-                                    #     dp_sums, errors, nmessages_per_user = handler(BBGN_recursive.data)
-                                    # else:
-                                    dp_sums, errors, nmessages_per_user = handler(advanced_HSDP.values)
+                                        handler = protocol_handlers.get(protocol_name)
+                                        # if protocol_name == "BBGN_recursive":
+                                        #     dp_sums, errors, nmessages_per_user = handler(BBGN_recursive.data)
+                                        # else:
+                                        dp_sums, errors, nmessages_per_user = handler(advanced_HSDP.values)
 
-                                    end_time = time.time()
-                                    cost_sec = end_time - start_time
-                                    print(f"Done. Elapsed: {cost_sec:.4f} seconds.")
-                                    print("=========================\n")
+                                        end_time = time.time()
+                                        cost_sec = end_time - start_time
+                                        print(f"Done. Elapsed: {cost_sec:.4f} seconds.")
+                                        print("=========================\n")
 
-                                    # Write results to file
-                                    with open(outfile_path, 'w', encoding='utf-8') as f:
-                                        f.write(f"epsilon = {eps}" + "\n")
-                                        f.write(
-                                            f"Experiment with protocol = {protocol_name}, n={n}, domain={d - 1}\n")
-                                        f.write(f"Elapsed time = {cost_sec:.4f} sec\n\n")
-                                        f.write("lambda: " + str(advanced_HSDP.find_lambda(n)) + "\n")
-                                        f.write("real sums: " + str(advanced_HSDP.real_sums) + "\n")
-                                        f.write("DP sums: " + str(dp_sums) + "\n")
-                                        f.write("Errors: " + str(errors) + "\n")
-                                        f.write("Average error: " + str(np.mean(np.sort(errors)[10:-10])) + "\n")
-                                        f.write("Avg RE: " + str(
-                                            np.mean(np.sort(errors)[10:-10]) / advanced_HSDP.real_sums[0]) + "\n")
-                                        f.write("#messages per user: " + str(nmessages_per_user) + "\n")
-                                        f.write("Average #messages: " + str(np.mean(nmessages_per_user)) + "\n")
+                                        # Write results to file
+                                        with open(outfile_path, 'w', encoding='utf-8') as f:
+                                            f.write(f"epsilon = {eps}" + "\n")
+                                            f.write(f"Attack messages per layer = {attack_num}\n")
+                                            f.write(
+                                                f"Experiment with protocol = {protocol_name}, n={n}, domain={d - 1}\n")
+                                            f.write(f"Elapsed time = {cost_sec:.4f} sec\n\n")
+                                            f.write("lambda: " + str(advanced_HSDP.find_lambda(n)) + "\n")
+                                            f.write("real sums: " + str(advanced_HSDP.real_sums) + "\n")
+                                            f.write("DP sums: " + str(dp_sums) + "\n")
+                                            f.write("Errors: " + str(errors) + "\n")
+                                            f.write(f"Detection flags per run: {advanced_HSDP.detection_per_run}\n")
+                                            # detect_arr = advanced_HSDP.detection_per_run
+                                            # detect_rate = sum(detect_arr) / len(detect_arr)
+                                            # f.write("Detection rate: {:.2f}\n".format(detect_rate))
+                                            f.write("Average error: " + str(np.mean(np.sort(errors)[10:-10])) + "\n")
+                                            f.write("Avg RE: " + str(
+                                                np.mean(np.sort(errors)[10:-10]) / advanced_HSDP.real_sums[0]) + "\n")
+                                            f.write("#messages per user: " + str(nmessages_per_user) + "\n")
+                                            f.write("Average #messages: " + str(np.mean(nmessages_per_user)) + "\n")
 
 
 if __name__ == "__main__":
