@@ -158,37 +158,44 @@ def run_fe1_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: f
 
 def run_ours_fe_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: float,
                           c: float, lambda_n, beta: float, k: int = 0, num_runs: int = 50, trim_count: int = 5) -> dict:
-    """run ours+FE1(LWY)"""
-    # set global parameters
-    simulate_ours_fe.num_users = n
-    simulate_ours_fe.domain = B
-    simulate_ours_fe.epsilon = epsilon
-    simulate_ours_fe.delta = delta
-    simulate_ours_fe.k = k
-    simulate_ours_fe.beta = beta
-    simulate_ours_fe.d = B
-    simulate_ours_fe.C = c
-    simulate_ours_fe.custom_lambda_n = lambda_n
+    """Run Ours+FE1 using the standalone ours_fe.py implementation as a drop-in."""
 
-    # corrupted users
-    malicious_users = []
+    # --- configure ours_fe module globals to match requested params ---
+    ours_fe.num_users = n
+    ours_fe.domain = B
+    ours_fe.epsilon = epsilon
+    ours_fe.delta = delta
+    ours_fe.k = k
+    ours_fe.beta = beta
+    ours_fe.d = B
+    ours_fe.C = c
+    ours_fe.custom_lambda_n = lambda_n
+
+    # set corrupted users (ours_fe expects a set assigned to malicious_users global)
     if k > 0:
         malicious_users = set(random.sample(range(n), k))
-    simulate_ours_fe.malicious_users = malicious_users
-    simulate_ours_fe.sorted_malicious = sorted(malicious_users)
+    else:
+        malicious_users = set()
+    ours_fe.malicious_users = malicious_users
+    ours_fe.sorted_malicious = sorted(malicious_users)
 
-    # true freq
+    # True freq (1-based indexing in FE1/ours_fe)
     true_freq = np.zeros(B + 1)
     for x in data:
         true_freq[x] += 1
 
     results = {'max_error': [], 'l50_error': [], 'l90_error': [], 'l95_error': [], 'l99_error': [], 'msg_count': []}
 
-    print(f"Running Ours+FE1 with {num_runs} iterations...")
+    print(f"Running Ours+FE1 (ours_fe.py) with {num_runs} iterations...")
     for run in range(num_runs):
         print(f"  Run {run + 1}/{num_runs}")
 
-        est_freq, nmessages_per_user = simulate_ours_fe.simulate_ours_FE1(data.tolist())
+        # ours_fe.ours_FE1 expects a Python list of 0-based values
+        start_time = time.time()
+        est_freq, nmessages_per_user = ours_fe.ours_FE1(data.tolist())
+        runtime = time.time() - start_time
+
+        # est_freq is expected to be numpy array length B+1 (1-based indexing)
         errors = np.abs(true_freq[1:] - est_freq[1:])
         max_error = np.max(errors)
 
@@ -205,12 +212,12 @@ def run_ours_fe_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delt
         results['l99_error'].append(l99_error)
         results['msg_count'].append(nmessages_per_user)
 
-    def trimmed_mean(data, trim):
-        sorted_data = sorted(data)
+    def trimmed_mean(data_list, trim):
+        sorted_data = sorted(data_list)
         return np.mean(sorted_data[trim:-trim] if trim > 0 else sorted_data)
 
     return {
-        'lambda': simulate_ours_fe.find_lambda(n),
+        'lambda': ours_fe.find_lambda(n),
         'max_error': trimmed_mean(results['max_error'], trim_count),
         'l50_error': trimmed_mean(results['l50_error'], trim_count),
         'l90_error': trimmed_mean(results['l90_error'], trim_count),
