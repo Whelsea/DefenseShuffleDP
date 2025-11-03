@@ -122,27 +122,26 @@ def generate_data(distribution, n, d):
 def main(argv):
     # Settings to iterate through
     global malicious_users
-    # protocols = ["CSUZZ", "simulate BBGN", "simulate GKMPS", "simulate ours+BBGN", "simulate ours+GKMPS"]
+    # protocols = ["CSUZZ", "BBGN", "GKMPS", "ours+BBGN", "ours+GKMPS", ...]
     protocols = ["BSDP+BBGN"]
     protocol_handlers = {
+        "CSUZZ": advanced_HSDP.CSUZZ,
         "BBGN": advanced_HSDP.baselineBBGN,
-        "ours+BBGN": advanced_HSDP.ours_BBGN,
         "GKMPS": advanced_HSDP.baselineGKMPS,
+        "SUSDP+BBGN": SUSDP.SUSDP_BBGN,
+        "SUSDP+GKMPS": SUSDP.SUSDP_GKMPS,
+        "BSDP+BBGN": BSDP.BSDP_BBGN,
+        "BSDP+GKMPS": BSDP.BSDP_GKMPS,
+        "ours+BBGN": advanced_HSDP.ours_BBGN,
         "ours+GKMPS": advanced_HSDP.ours_GKMPS,
+        "simulate SUSDP+BBGN": SUSDP.Simulate_SUSDP_BBGN_speed,
+        "simulate SUSDP+GKMPS": SUSDP.Simulate_SUSDP_GKMPS_speed,
+        "simulate BSDP+BBGN": BSDP.simulate_BSDP_BBGN_speed,
+        "simulate BSDP+GKMPS": BSDP.simulate_BSDP_GKMPS_speed,
         "simulate ours+BBGN": advanced_HSDP.simulate_ours_BBGN,
         "simulate ours+GKMPS": advanced_HSDP.simulate_ours_GKMPS,
         "simulate GKMPS": advanced_HSDP.simulateGKMPS,
         "simulate BBGN": advanced_HSDP.simulateBBGN,
-        "CSUZZ": advanced_HSDP.CSUZZ,
-        # "BBGN_recursive": BBGN_recursive.run_recursive
-        "SUSDP+BBGN": SUSDP.SUSDP_BBGN,
-        "SUSDP+GKMPS": SUSDP.SUSDP_GKMPS,
-        "simulate SUSDP+BBGN": SUSDP.Simulate_SUSDP_BBGN_speed,
-        "simulate SUSDP+GKMPS": SUSDP.Simulate_SUSDP_GKMPS_speed,
-        "BSDP+BBGN": BSDP.BSDP_BBGN,
-        "BSDP+GKMPS": BSDP.BSDP_GKMPS,
-        "simulate BSDP+BBGN": BSDP.simulate_BSDP_BBGN_speed,
-        "simulate BSDP+GKMPS": BSDP.simulate_BSDP_GKMPS_speed,
     }
     # list_num_users = [2**16,2**20,2**24]
     list_num_users = [2 ** 16]
