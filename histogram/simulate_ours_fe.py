@@ -135,7 +135,7 @@ def simulate_ours_FE1(values):
     # initial fe1 objects
     fe1_list = []
     for r in range(L - 1):
-        privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
+        privacy_scale = max((2 ** r - 1) / (2 ** r), 1)
         fe1_r = FE1_Simulator.FE1Simulator(n=lambda_n * (2 ** r), B=d, epsilon=eps_part1 * privacy_scale,
                                            delta=delta_part1 * privacy_scale,
                                            c=C, beta=beta_part1)
