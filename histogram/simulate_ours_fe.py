@@ -29,7 +29,7 @@ custom_lambda_n = None
 #   Input: n
 #   Output: lambda (log^2 n)
 #       ** lambda is the largest integer satisfying:
-#          1) ∈ [log^2 n, log^2.5 n]
+#          1) ∈ c * [log^2 n, log^2.5 n]
 #          2) Is a power of 2
 #
 #   Currently used for bit counting/summation/frequency estimation problems
