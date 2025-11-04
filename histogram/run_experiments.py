@@ -117,7 +117,7 @@ def load_data_by_mode(data_mode: str, n: int, B: int, seed: int = 42) -> np.ndar
 def run_fe1_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: float,
                       c: float, beta: float, k: int = 0, num_runs: int = 50, trim_count: int = 5) -> dict:
     """Run FE1(LWY)"""
-    sim = FE1_Simulator.FE1Simulator(n, B, epsilon, delta, c, beta)
+    sim = FE1.FE1Baseline(n, B, epsilon, delta, c, beta)
 
     # real freq
     true_freq = np.zeros(B + 1)
@@ -131,9 +131,13 @@ def run_fe1_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: f
         print(f"  Run {run + 1}/{num_runs}")
 
         start_time = time.time()
-        est_freq = sim.simulate_parallel(data, 1)
+
+        messages = sim.randomize_all(data.tolist())
+        est_freq = sim.analyzer(messages)
+
         if k > 0:
             est_freq += k * n
+
         runtime = time.time() - start_time
 
         errors = np.abs(true_freq[1:] - est_freq[1:])
@@ -142,7 +146,7 @@ def run_fe1_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: f
         results['runtime'].append(runtime)
         results['max_error'].append(max_error)
         results['msg_count'].append(1 + sim.sample_prob)
-        results['bit_count'].append(math.ceil(math.log2(sim.q)) * 2 + math.ceil(math.log2(sim.b)))
+        results['bit_count'].append(sim.bits_per_message())
 
     def trimmed_mean(data, trim):
         sorted_data = sorted(data)
@@ -155,6 +159,7 @@ def run_fe1_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: f
         'msg_count': trimmed_mean(results['msg_count'], trim_count),
         'bit_count': trimmed_mean(results['bit_count'], trim_count)
     }
+
 
 
 def run_ours_fe_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: float,
