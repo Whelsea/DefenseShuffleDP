@@ -116,11 +116,13 @@ We evaluate the following protocols under the shuffle DP model for `count` and `
 We evaluate the following protocols for `histogram` (i.e., frequency estimation) queries:
 
 - **FE1 (LWY)**  
-  *File:* `histogram/FE1_Simulator.py`  
+  *File:* `histogram/FE1.py`  
 - **PFLIP (CZ)**  
   *File:* `histogram/Flip_list.py`  
 - **Ours+FE1（Ours+LWY）**  
-  *File:* `histogram/simulate_ours_fe.py`  
+  *File:* `histogram/ours_fe.py`
+
+For faster verification, equivalent simulators are also provided (`FE1_Simulator.py`, `simulate_ours_fe.py`).
 
 ---
 ## Dataset
