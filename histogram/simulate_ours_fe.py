@@ -8,10 +8,6 @@ import FE1_Simulator
 from typing import List
 import os
 
-'''
-    Can set lambda, n and lambda need to be powers of 2
-    Attacker behavior: send n messages with value u
-'''
 # # =================== Default parameter setting (global) ===================
 num_users = 4096
 domain = 2
