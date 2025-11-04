@@ -9,6 +9,7 @@ from typing import List, Tuple
 import FE1_Simulator
 import simulate_ours_fe
 import Flip_list
+import ours_fe
 
 
 def load_sf_salary_for_frequency(n: int, d: int, seed: int = 42) -> list[int]:
