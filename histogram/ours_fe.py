@@ -93,7 +93,7 @@ def init_FE1(n: int, d: int, L: int) -> List[FE1Baseline]:
     for r in range(L):
         group_size = find_lambda(n) * (2 ** r)
 
-        privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
+        privacy_scale = max((2 ** r - 1) / (2 ** r), 1)
 
         # Determine current layer's privacy budget (eps, delta)
         if r == L - 1:  # Top layer
