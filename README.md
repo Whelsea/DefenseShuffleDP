@@ -78,6 +78,8 @@ Each subdirectory includes a standalone experiment script:
     list_distribution = ["Gauss"]        # Distribution type for synthetic data
     ```
 
+  In addition, the running script also provides mathematically equivalent simulators (e.g., `"simulate SUSDP+BBGN"`, `"simulate SUSDP+GKMPS"`, and so on) that reproduce identical utility results as their full message-exchange implementations, offering a faster yet theoretically equivalent way for readers to verify our results.
+
 - For `histogram` queries:
 
   ```bash
