@@ -9,9 +9,11 @@ This repository contains the implementation of our unified framework for evaluat
 ```
 DefenseShuffleDP
 ├─count_sum
-│  │  advanced_HSDP.py
-│  │  BBGN.py
 │  │  GKMPS.py
+│  │  BBGN.py
+│  │  SUSDP.py
+│  │  BSDP.py
+│  │  advanced_HSDP.py
 │  │  run_experiments.py
 │  │ 
 │  └─data
@@ -20,10 +22,12 @@ DefenseShuffleDP
 │          ├─Ont_Salaries
 │          └─SF_Salaries
 └─histogram
+    │  FE1.py
     │  FE1_Simulator.py
     │  Flip_list.py
-    │  run_experiments.py
+    │  ours_fe.py
     │  simulate_ours_fe.py
+    │  run_experiments.py
     │  
     └─data
        ├─aol_data
