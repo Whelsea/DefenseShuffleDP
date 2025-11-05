@@ -102,7 +102,7 @@ Each subdirectory includes a standalone experiment script:
     # Use binary-search μ (default)
     fe1 = FE1Baseline(n, B, epsilon, delta, c, beta, use_mu_search=True)
 
-    # Use theoretical bound μ (recommended for small ε)
+    # Use theoretical bound μ (recommended for ours+FE1)
     fe1 = FE1Baseline(n, B, epsilon, delta, c, beta, use_mu_search=False)
     ```
 
