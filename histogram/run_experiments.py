@@ -328,16 +328,16 @@ def run_flip_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: 
 
 def main():
     # parameter setting
-    # algorithms = ["Flip", "FE1", "Ours+FE1"]
-    algorithms = ["Flip"]
-    data_modes = ["aol"]  # ["unif", "zipf", "gauss", "aol", "sf_sal", "br_sal"]
+    algorithms = ["Flip", "FE1", "Ours+FE1"]
+    # algorithms = ["Flip"]
+    data_modes = ["unif"]  # ["unif", "zipf", "gauss", "aol", "sf_sal", "br_sal"]
     # list_n = [2 ** 12, 2 ** 16, 2 ** 20, 2 ** 24]
     list_n = [2 ** 17]
     list_B = [2 ** 17]
     list_epsilon = [4]
     list_c = [1.0]
-    list_k = [1]
-    list_lambda = [8192]
+    list_k = [0,1]
+    list_lambda = [4096]
     # fixed parameters
     fixed_beta = 0.1
     fixed_num_runs = 10
@@ -357,7 +357,7 @@ def main():
 
                     try:
                         data = load_data_by_mode(data_mode, n, B)
-                        print(f"✅ Data loaded successfully. Shape: {data.shape}")
+                        print(f"Data loaded successfully. Shape: {data.shape}")
 
                         for epsilon in list_epsilon:
                             delta = 1 / (n * n)
@@ -393,7 +393,7 @@ def main():
                                                 {"runs": fixed_num_runs, "trim": fixed_trim_count}
                                             )
 
-                                            print(f"✅ {algorithm} completed successfully")
+                                            print(f"{algorithm} completed successfully")
 
                                         except Exception as e:
                                             print(f" Error running {algorithm}: {str(e)}")
