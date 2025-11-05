@@ -84,6 +84,8 @@ Each subdirectory includes a standalone experiment script:
 
   In addition, the running script also provides mathematically equivalent simulators (e.g., `"simulate SUSDP+BBGN"`, `"simulate SUSDP+GKMPS"`, and so on) that reproduce identical utility results as their full message-exchange implementations, offering a faster yet theoretically equivalent way for readers to verify our results.
 
+  Note: When running **BSDP+BBGN**, BBGN computes `domain` with a factor dependent on group size (e.g. `self.domain = n * U * 10`), which causes modular wrapping that can “fold” the corrupted user’s `n` noisy messages and reduce the effective attack magnitude. To avoid underestimating attack strength, increase the multiplier used to build `domain` (for example, from `10` to `1e3` or `1e4`) in `BBGN.py`.
+
 - For `histogram` queries:
 
   ```bash
