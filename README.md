@@ -138,7 +138,7 @@ We evaluate the following protocols for `histogram` (i.e., frequency estimation)
 
 - **FE1 (LWY)**  
   *File:* `histogram/FE1.py`  
-- **PFLIP (CZ)**  
+- **FLIP (CZ)**  
   *File:* `histogram/Flip_list.py`  
 - **Ours+FE1（Ours+LWY）**  
   *File:* `histogram/ours_fe.py`
