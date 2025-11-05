@@ -106,12 +106,19 @@ The data/ directories include preprocessed samples for selected settings. Due to
 
 We evaluate the following protocols under the shuffle DP model for `count` and `sum` queries:
 
+- **CSUZZ**  
+  *File:* `count_sum/advanced_HSDP.py`
 - **GKMPS**  
   *File:* `count_sum/GKMPS.py`  
 - **BBGN**  
-  *File:* `count_sum/BBGN.py`  
-- **CSUZZ and our Framework (Ours+GKMPS, Ours+BBGN)**  
+  *File:* `count_sum/BBGN.py`
+- **SUSDP** (strawman protocol)  
+  *File:* `count_sum/SUSDP.py`  
+- **BSDP** (improved protocol based on SUSDP)  
+  *File:* `count_sum/BSDP.py`  
+- **HSDP / OHSDP** (final enhanced protocol)  
   *File:* `count_sum/advanced_HSDP.py`
+
   
 ### Histogram Queries
 
