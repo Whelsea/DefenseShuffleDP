@@ -171,14 +171,16 @@ class FE1Baseline:
         self.c = float(c)
         self.beta = beta
 
-        self.b = max(2, int(n / (math.log(n) ** self.c)))
+        # # self.b = max(2, int(n / (math.log(n) ** self.c)))
         # self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
         self.q = next_prime_at_least(max(2, B))
 
         if use_mu_search:
             self.mu = mu_search(self.n, self.epsilon, self.delta)
+            self.b = max(2, int(n / (math.log(n) ** self.c)))
         else:
             self.mu = 32.0 * math.log(2.0 / self.delta) / (self.epsilon ** 2)
+            self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
         print(self.mu)
         self.sample_prob = self.mu * (self.b / self.n)
         self.send_fixed_messages = int(math.floor(self.sample_prob))
