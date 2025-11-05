@@ -110,7 +110,7 @@ def init_FE1(n: int, d: int, L: int) -> List[FE1Baseline]:
         fe1_r = FE1Baseline(n=current_n, B=d,
                             epsilon=current_eps,
                             delta=current_delta,
-                            c=C, use_mu_search=True,
+                            c=C, use_mu_search=False,
                             beta=current_beta) 
         fe1_list.append(fe1_r)
 
