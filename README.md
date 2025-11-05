@@ -152,4 +152,4 @@ For histogram queries, pre-generated datasets are located under `histogram/data/
 | [Adult Data](https://archive.ics.uci.edu/dataset/2/adult) | Count/Sum | Uses `sex` or `age` field |
 | [SF Salaries](https://www.kaggle.com/datasets/kaggle/sf-salaries) | Count/Sum/Hist | Uses `BasePay` column |
 | [Brazil Salaries](https://www.kaggle.com/datasets/gustavomodelli/monthly-salary-of-public-worker-in-brazil) | Count/Sum/Hist | Uses `total_salry` column |
-| [AOL Dataset](http://www.cim.mcgill.ca/~dudek/206/Logs/AOL-user-ct-collection/) | Histogram | We use `user-ct-test-collection-01.txt` |
+| [AOL Dataset](http://www.cim.mcgill.ca/~dudek/206/Logs/AOL-user-ct-collection/) | Histogram | Uses `user-ct-test-collection-01.txt` |
