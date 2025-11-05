@@ -152,24 +152,27 @@ def mu_search(n: int, epsilon: float, delta: float) -> float:
         else:
             le = mi
     # The optimal mu is ri * n.
-    # return ri * n 
-    
-    # Note on small epsilon: The optimal mu derived from the binary search (ri * n) 
+    return ri * n
+
+    # Note on small epsilon: The optimal mu derived from the binary search (ri * n)
     # may exhibit poor performance (or stability) when epsilon is small.
     # Therefore, we use the theoretical bound presented in the FE1 paper as a robust and stable alternative.
-    return 32 * math.log(2 / self.delta) / (self.epsilon ** 2)
+    # return 32 * math.log(2 / delta) / (epsilon ** 2)
+
 
 # ======================  FE1  ======================
 class FE1Baseline:
-    def __init__(self, n: int, B: int, epsilon: float, delta: float, c: float,
+    def __init__(self, n: int, B: int, epsilon: float, delta: float, c: float, beta: float,
                  use_mu_search: bool = True, seed: int | None = None):
         self.n = int(n)
         self.B = int(B)
         self.epsilon = float(epsilon)
         self.delta = float(delta)
         self.c = float(c)
+        self.beta = beta
 
         self.b = max(2, int(n / (math.log(n) ** self.c)))
+        # self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
         self.q = next_prime_at_least(max(2, B))
 
         if use_mu_search:
@@ -225,7 +228,52 @@ class FE1Baseline:
         arr = np.array(self.messages, dtype=np.int64)
         return arr[:, 0], arr[:, 1], arr[:, 2]
 
+    def get_theta_fe1(self):
+        """
+        theta: error bound (can be adjust to different settings)
+        """
+        b = self.b
+        pcol = self.collision_prob
+        rho = self.sample_prob
 
+        # expectation of noise
+        mu_noise1 = self.n * pcol
+        mu_noise2 = (self.n * 2 * math.floor(rho)) * (1 / b)
+        mu_noise3 = (self.n * 2) * ((rho - math.floor(rho)) / b)
+        mu = mu_noise1 + mu_noise2 + mu_noise3
+
+        term1 = 3 * math.log(2 * self.B / self.beta)
+        term2 = math.sqrt(3 * math.log(2 * self.B / self.beta) * mu) / (1 - pcol)
+
+        bias = 0
+        theta = max(term1, term2) + bias
+
+        return theta
+
+    def analyzer(self, messages: List[Tuple[int, int, int]], workers: int | None = None) -> np.ndarray:
+        """
+        Public Analyzer method: Aggregates messages and uses the speedup function
+        to estimate the frequency vector for the current group size (self.n).
+        """
+        # 1. Handle empty message list
+        if not messages:
+            return np.zeros(self.B + 1)
+
+        # 2. Convert list of tuples to numpy arrays for the speedup function
+        arr = np.array(messages, dtype=np.int64)
+        U, V, W = arr[:, 0], arr[:, 1], arr[:, 2]
+
+        # 3. Call the external multi-process analyzer
+        # We rely on the FE1 object's internal n, rho, pcol which are set
+        # based on the group size/parameters in the HSDP structure.
+        freq_vec = analyzers_speedup_mp(
+            U, V, W,
+            B=self.B, q=self.q, b=self.b,
+            n=self.n, rho=self.sample_prob, pcol=self.collision_prob,
+            workers=workers  # Pass through the workers parameter
+        )
+
+        return freq_vec
 
 
 # ====================== test code non-speedup vs speedup ======================
@@ -237,7 +285,7 @@ def run_once(n=100_000, B=(1 << 22), epsilon=1.0, delta=None, c=1.0,
     rng = np.random.default_rng(seed)
     values = rng.integers(0, B, size=n, dtype=np.int64)
 
-    fe = FE1Baseline(n=n, B=B, epsilon=epsilon, delta=delta, c=c, use_mu_search=True, seed=seed)
+    fe = FE1Baseline(n=n, B=B, epsilon=epsilon, delta=delta, c=c, beta=0.1, use_mu_search=True, seed=seed)
     t0 = time.time()
     _ = fe.randomize_all(values.tolist(), shuffle=True)
     U, V, W = fe.to_numpy_messages()
@@ -257,7 +305,7 @@ def run_once(n=100_000, B=(1 << 22), epsilon=1.0, delta=None, c=1.0,
         print(f"[c={c}] q={fe.q}, b={fe.b}, pcol={fe.collision_prob:.7g}")
         print(f"[c={c}] randomization time: {t1 - t0:.2f}s, total messages={total}")
 
-    # non-speed
+
     used = set(int(v) + 1 for v in values)
     queries = []
     while len(queries) < num_queries:
@@ -299,4 +347,4 @@ def run_once(n=100_000, B=(1 << 22), epsilon=1.0, delta=None, c=1.0,
     return {"non_speedup_sec": non_speedup_sec, "speedup_sec": speedup_sec}
 
 if __name__ == "__main__":
-    _ = run_once(n=2**17, B=2**17,epsilon=1, c=3.0, seed=1, workers=4)
+    _ = run_once(n=2**17, B=2**17,epsilon=4, c=1.0, seed=1, workers=4)
