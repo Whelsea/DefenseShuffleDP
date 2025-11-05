@@ -95,7 +95,21 @@ Each subdirectory includes a standalone experiment script:
 
   - All settings can be modified at the beginning of `histogram/run_experiments.py`, in a similar manner to `count_sum`, by adjusting the `algorithms`, `data_modes`, and parameter lists such as `list_n`, `list_B`, `list_lambda`, etc.
   - For quick testing or debugging, the algorithms can also be executed directly within their corresponding files (e.g., `FE1.py` or `ours_fe.py`) without running the full experiment script.
+  - Note on FE1 under small ε: our FE1 implementation includes a μ-search procedure and a bucket-size (`b`) computation. When FE1 is used in our hierarchical protocols (i.e., Ours+FE1) where each level only receives a small privacy budget (typically O(ε / log n)), the search-based μ can become unstable. In this case, we recommend switching to the theoretical FE1 bound
 
+  ```python
+  # return ri * n
+  return 32 * math.log(2 / delta) / (epsilon ** 2)
+  ```
+
+  and keeping the log-based bucket size
+
+  ```python
+  self.b = max(2, int(n / (math.log(n) ** self.c)))
+  # self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
+  ```
+
+  so that frequency estimation remains stable even for very small per-layer ε.
 
 The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
 
