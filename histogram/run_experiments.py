@@ -328,7 +328,7 @@ def run_flip_algorithm(data: np.ndarray, n: int, B: int, epsilon: float, delta: 
 
 def main():
     # parameter setting
-    algorithms = ["Flip", "FE1", "Ours+FE1"]
+    algorithms = ["Flip","FE1" ,"Ours+FE1"]
     # algorithms = ["Flip"]
     data_modes = ["unif"]  # ["unif", "zipf", "gauss", "aol", "sf_sal", "br_sal"]
     # list_n = [2 ** 12, 2 ** 16, 2 ** 20, 2 ** 24]
