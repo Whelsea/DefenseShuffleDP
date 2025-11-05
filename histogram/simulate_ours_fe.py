@@ -303,7 +303,6 @@ if __name__ == "__main__":
                             print(f"running n={n}, B={d}, time={t}")
                             est_freq, nmessages_per_user = simulate_ours_FE1(values)
 
-                            # 误差评估
                             true_freq = np.zeros(d + 1)
                             for x in values:
                                 true_freq[x] += 1
