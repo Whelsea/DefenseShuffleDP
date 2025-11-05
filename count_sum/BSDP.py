@@ -116,8 +116,6 @@ def LocalRandomizer(baselines, value):
     messages_per_user = []
     for b in baselines:
         m = b.LocalRandomizer(value)
-        print(value)
-        print(m)
         messages_per_user.append(m)
     return messages_per_user  # [msg_user, msg_block, msg_output]
 
@@ -137,9 +135,9 @@ def Analyzer(baselines, all_messages):
     theta_user = get_theta(baselines[0], beta_user_block)
     theta_block = get_theta(baselines[1], beta_user_block)
     theta_output = get_theta(baselines[2], beta_output)
-    print("theta:", theta_user)
-    print("theta:", theta_block)
-    print("theta:", theta_output)
+    # print("theta:", theta_user)
+    # print("theta:", theta_block)
+    # print("theta:", theta_output)
 
 
     # ---------- 1. User-Level Detection ----------
@@ -157,23 +155,12 @@ def Analyzer(baselines, all_messages):
         # block messages
         start_idx = b * bsize
         end_idx = (b + 1) * bsize
-        # group_messages = [all_messages[i][1] for i in range(start_idx, end_idx)]
-        # print(len(group_messages))
-        #
-        # flat_msgs = list(chain.from_iterable(group_messages))
-        #
-        # result = baselines[1].Analyzer(flat_msgs, values='')
-        # collect block-layer messages for users in this block
         group_messages = [all_messages[i][1] for i in range(start_idx, end_idx)]
         flattened_group_messages = list(chain.from_iterable(group_messages))
 
         # protocol result (baseline's Analyzer)
         result = baselines[1].Analyzer(flattened_group_messages, values='')
-        # result= sum(flat_msgs)
-        # print(len(flat_msgs))
-        # print(sum(flat_msgs))
-        # print(flat_msgs[10:25])
-        print(f"block {b} result:{result}")
+        # print(f"block {b} result:{result}")
 
         # check children
         if any(Q_user[i] == float('-inf') for i in range(start_idx, end_idx)):
@@ -184,8 +171,8 @@ def Analyzer(baselines, all_messages):
                 Q_block[b] = float('-inf')
             else:
                 Q_block[b] = result
-        if Q_block[b] == float('-inf'):
-            print(f"block {b} is detected")
+        # if Q_block[b] == float('-inf'):
+        #     print(f"block {b} is detected")
 
     # ---------- 3. Output-Level Detection ----------
     all_output_msgs = [all_messages[i][2] for i in range(n)]
@@ -226,11 +213,9 @@ def BSDP(baselines, values, malicious):
     for i in range(n):
         if i in malicious:
             # The corrupted user sends messages with U values at all three layers.
-            print(f"yes there is an atta {n}")
             m_user = [(domain() - 1)] * n
             m_block = [(domain() - 1)] * n * n
             m_output = [(domain() - 1)] * n
-            print(len(m_user))
             all_messages.append([m_user, m_block, m_output])
         else:
             m = LocalRandomizer(baselines, values[i])
