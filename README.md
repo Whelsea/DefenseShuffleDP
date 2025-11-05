@@ -95,7 +95,7 @@ Each subdirectory includes a standalone experiment script:
 
   - All settings can be modified at the beginning of `histogram/run_experiments.py`, in a similar manner to `count_sum`, by adjusting the `algorithms`, `data_modes`, and parameter lists such as `list_n`, `list_B`, `list_lambda`, etc.
   - For quick testing or debugging, the algorithms can also be executed directly within their corresponding files (e.g., `FE1.py` or `ours_fe.py`) without running the full experiment script.
-  - Note on FE1 under small ε: The implementation of FE1 includes a μ-search procedure and a bucket-size (`b`) computation. When FE1 is used in hierarchical protocols (e.g., **Ours+FE1**), where each layer receives a small privacy budget (typically O(ε / log n)), the search process can become unstable. In our implementation, this behavior can be controlled using the `use_mu_search` flag  
+  - Note on FE1 under small ε: The implementation of FE1 includes a μ-search procedure and a bucket-size (`b`) computation. When FE1 is used in hierarchical protocols (e.g., **Ours+FE1**), where each level receives a small privacy budget (typically O(ε / log n)), the search process can become unstable. In our implementation, this behavior can be controlled using the `use_mu_search` flag  
     when initializing `FE1Baseline`:
 
     ```python
@@ -106,11 +106,8 @@ Each subdirectory includes a standalone experiment script:
     fe1 = FE1Baseline(n, B, epsilon, delta, c, beta, use_mu_search=False)
     ```
 
-    Setting `use_mu_search=False` automatically switches to the theoretical FE1 bound  
-    `μ = 32 * log(2 / δ) / ε²` and the corresponding ε-dependent bucket size  
-    `b = max(1, ε² * n / log⁽ᶜ⁾ n)`, ensuring numerical stability for very small per-layer ε.
+    Setting `use_mu_search=False` automatically switches to the theoretical FE1 bound `μ = 32 * log(2 / δ) / ε²`, ensuring numerical stability for very small per-level ε.
 
-    so that frequency estimation remains stable even for very small per-layer ε.
     
 The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
 
