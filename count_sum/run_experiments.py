@@ -122,8 +122,8 @@ def generate_data(distribution, n, d):
 def main(argv):
     # Settings to iterate through
     global malicious_users
-    # protocols = ["CSUZZ", "BBGN", "GKMPS", "ours+BBGN", "ours+GKMPS", ...]
-    protocols = ["BSDP+BBGN"]
+    # protocols = ["CSUZZ", "BBGN", "GKMPS","SUSDP+BBGN" "ours+BBGN", "ours+GKMPS", ...]
+    protocols = ["CSUZZ", "BBGN", "GKMPS", "SUSDP+BBGN", "SUSDP+GKMPS", "BSDP+BBGN", "BSDP+GKMPS", "ours+BBGN", "ours+GKMPS"]
     protocol_handlers = {
         "CSUZZ": advanced_HSDP.CSUZZ,
         "BBGN": advanced_HSDP.baselineBBGN,
@@ -144,14 +144,14 @@ def main(argv):
         "simulate BBGN": advanced_HSDP.simulateBBGN,
     }
     # list_num_users = [2**16,2**20,2**24]
-    list_num_users = [2 ** 16]
+    list_num_users = [2 ** 12]
     list_domain = [2]
     # list_k = [1,2,4,8]
-    list_k=[1]
+    list_k=[0,1]
     # list_epsilon = [0.5, 1, 2, 4]
     list_epsilon = [1]
     # list_lambda = [4, 8, 32, 64, 128, 2048, 4096]
-    list_lambda = [256]
+    list_lambda = [128]
     # list_dataset = ["Adult", "SF_Salaries","BR_Salaries"]
     list_dataset = ["SF_Salaries","BR_Salaries"]
     list_problem = ["Bit Counting", "Summation"]
