@@ -110,6 +110,8 @@ Each subdirectory includes a standalone experiment script:
     ```
 
     so that frequency estimation remains stable even for very small per-layer ε.
+    
+The data/ directories include preprocessed samples for selected settings. Due to file size constraints, we do not include all datasets or parameter combinations. However, each dataset folder includes scripts for generating or processing the original data.
 
 ---
 ## 🧪 Supported Methods
