@@ -1,5 +1,7 @@
 import math
 import time
+# from pickle import FALSE
+
 import numpy as np
 from typing import List, Tuple
 from collections import Counter
@@ -173,7 +175,7 @@ class FE1Baseline:
 
         # # self.b = max(2, int(n / (math.log(n) ** self.c)))
         # self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
-        self.q = next_prime_at_least(max(2, B))
+
 
         if use_mu_search:
             self.mu = mu_search(self.n, self.epsilon, self.delta)
@@ -181,7 +183,9 @@ class FE1Baseline:
         else:
             self.mu = 32.0 * math.log(2.0 / self.delta) / (self.epsilon ** 2)
             self.b = int(max(1, epsilon ** 2 * n / math.pow(math.log(n), c)))
-        print(self.mu)
+            # self.b = max(2, int(n / (math.log(n) ** self.c)))
+        print("eps:", self.epsilon, "delta:",self.delta,"mu:",self.mu,"b:",self.b)
+        self.q = next_prime_at_least(max(2, self.B, self.b))
         self.sample_prob = self.mu * (self.b / self.n)
         self.send_fixed_messages = int(math.floor(self.sample_prob))
         self.remaining_prob = self.sample_prob - self.send_fixed_messages
@@ -212,7 +216,7 @@ class FE1Baseline:
     def randomize_all(self, values: List[int], shuffle: bool = True) -> List[Tuple[int, int, int]]:
         self.messages = []
         for v in values:
-            x = v + 1
+            x = v
             self.messages.extend(self.local_randomizer(x))
         if shuffle:
             self.rng.shuffle(self.messages)
