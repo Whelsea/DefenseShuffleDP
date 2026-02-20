@@ -93,7 +93,7 @@ def init_FE1(n: int, d: int, L: int) -> List[FE1Baseline]:
     for r in range(L):
         group_size = find_lambda(n) * (2 ** r)
 
-        privacy_scale = (2 ** r - 1) / (2 ** r) if r >= 1 else 1.0
+        privacy_scale = (group_size - 1) / (group_size) if group_size > 1 else 1.0
 
         # Determine current layer's privacy budget (eps, delta)
         if r == L - 1:  # Top layer
@@ -225,7 +225,7 @@ def analyzer_fe1(Q: List[np.ndarray], n: int, fe1_list: List[FE1Baseline]):
 def ours_FE1(values: List[int]):
     """
     Executes the HSDP-FE1 protocol (Randomization, Aggregation, Analyzer).
-    Values are assumed to be 0-indexed [0, d-1]. FE1 expects 1-indexed [1, d].
+    Values are assumed to be 1-indexed.
     """
     n = len(values)
     B = d  # Global domain size
@@ -244,7 +244,7 @@ def ours_FE1(values: List[int]):
 
     for i in range(n):
         # FE1 expects 1-indexed values [1, B]
-        v_fe1 = values[i] + 1
+        v_fe1 = values[i]
 
         # Check if user i is an attacker
         if i in malicious_users:
@@ -294,15 +294,13 @@ def ours_FE1(values: List[int]):
 # ------------------------------------------------------------
 #  Data Loading and Main Experiment Logic
 # ------------------------------------------------------------
-
 def loaddata(path: str) -> List[int]:
-    """Loads data, assumes 0-indexed values for consistency with FE1 input preparation."""
+    """Loads data, data files are 1-indexed [1, B] (consistent with C++ implementation)."""
     with open(path, 'r') as f:
         n = int(f.readline())
         d = int(f.readline())
-        # Data values are assumed to be 0-indexed [0, B-1]
+        # Data values are 1-indexed [1, B]
         return [int(f.readline()) for _ in range(n)], n, d
-
 
 def load_data_by_mode(data_mode: str, n: int, B: int):
     """Loads or simulates data based on mode."""
@@ -319,7 +317,7 @@ def load_data_by_mode(data_mode: str, n: int, B: int):
         data, _, _ = loaddata(path)
     elif data_mode == "unif":
         # Generate 0-indexed values [0, B-1]
-        data = np.random.randint(0, B, size=n).tolist()
+        data = np.random.randint(1, B + 1, size=n).tolist()
     else:
         raise ValueError(f"Unsupported data_mode: {data_mode}")
     return data
@@ -374,7 +372,7 @@ if __name__ == "__main__":
                         true_freq = np.zeros(d + 1)
                         for x in values:
                             # Values are 0-indexed, FE1 analysis is 1-indexed
-                            true_freq[x + 1] += 1
+                            true_freq[x] += 1
 
                             # Error evaluation (L-inf norm: max error)
                         # Only compare bins [1..d]
